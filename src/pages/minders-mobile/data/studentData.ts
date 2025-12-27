@@ -1,0 +1,160 @@
+
+import { Student } from '../types/startTrip';
+
+export const mockStudents: Student[] = [
+  // Westlands Zone A students
+  {
+    id: '1',
+    name: 'Emma Wilson',
+    admissionNumber: 'ST001',
+    age: 8,
+    gender: 'Female',
+    photoUrl: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&crop=face',
+    zoneId: '1',
+    routeId: '1',
+    pickupOrder: 1,
+    address: 'Westlands Shopping Center',
+    parentName: 'Sarah Wilson',
+    parentPhone: '+254 722 123 456',
+    status: 'active'
+  },
+  {
+    id: '2',
+    name: 'James Kamau',
+    admissionNumber: 'ST002',
+    age: 10,
+    gender: 'Male',
+    photoUrl: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&crop=face',
+    zoneId: '1',
+    routeId: '1',
+    pickupOrder: 2,
+    address: 'Sarit Center',
+    parentName: 'John Kamau',
+    parentPhone: '+254 733 234 567',
+    status: 'active'
+  },
+  {
+    id: '3',
+    name: 'Grace Akinyi',
+    admissionNumber: 'ST003',
+    age: 9,
+    gender: 'Female',
+    photoUrl: 'https://images.unsplash.com/photo-1501286353178-1ec881214838?w=100&h=100&fit=crop&crop=face',
+    zoneId: '1',
+    routeId: '1',
+    pickupOrder: 3,
+    address: 'ABC Place',
+    parentName: 'Mary Akinyi',
+    parentPhone: '+254 744 345 678',
+    status: 'active'
+  },
+  // Karen Zone B students
+  {
+    id: '4',
+    name: 'Michael Ochieng',
+    admissionNumber: 'ST004',
+    age: 7,
+    gender: 'Male',
+    photoUrl: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&crop=face',
+    zoneId: '2',
+    routeId: '1',
+    pickupOrder: 1,
+    address: 'Karen Shopping Center',
+    parentName: 'Peter Ochieng',
+    parentPhone: '+254 755 456 789',
+    status: 'active'
+  },
+  {
+    id: '5',
+    name: 'Sophia Njeri',
+    admissionNumber: 'ST005',
+    age: 11,
+    gender: 'Female',
+    photoUrl: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&crop=face',
+    zoneId: '2',
+    routeId: '1',
+    pickupOrder: 2,
+    address: 'Galleria Mall',
+    parentName: 'Jane Njeri',
+    parentPhone: '+254 766 567 890',
+    status: 'active'
+  },
+  // CBD Central students
+  {
+    id: '6',
+    name: 'David Mwangi',
+    admissionNumber: 'ST006',
+    age: 12,
+    gender: 'Male',
+    photoUrl: 'https://images.unsplash.com/photo-1501286353178-1ec881214838?w=100&h=100&fit=crop&crop=face',
+    zoneId: '3',
+    routeId: '2',
+    pickupOrder: 1,
+    address: 'City Hall Way',
+    parentName: 'Paul Mwangi',
+    parentPhone: '+254 777 678 901',
+    status: 'active'
+  },
+  {
+    id: '7',
+    name: 'Faith Wanjiku',
+    admissionNumber: 'ST007',
+    age: 6,
+    gender: 'Female',
+    photoUrl: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&crop=face',
+    zoneId: '3',
+    routeId: '2',
+    pickupOrder: 2,
+    address: 'Kenyatta Avenue',
+    parentName: 'Rose Wanjiku',
+    parentPhone: '+254 788 789 012',
+    status: 'active'
+  },
+  // Kileleshwa North students
+  {
+    id: '8',
+    name: 'Alex Kipchoge',
+    admissionNumber: 'ST008',
+    age: 9,
+    gender: 'Male',
+    photoUrl: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=100&h=100&fit=crop&crop=face',
+    zoneId: '4',
+    routeId: '2',
+    pickupOrder: 1,
+    address: 'Kileleshwa Shopping Center',
+    parentName: 'Samuel Kipchoge',
+    parentPhone: '+254 799 890 123',
+    status: 'active'
+  },
+  // Kileleshwa South students
+  {
+    id: '9',
+    name: 'Michelle Wambui',
+    admissionNumber: 'ST009',
+    age: 8,
+    gender: 'Female',
+    photoUrl: 'https://images.unsplash.com/photo-1501286353178-1ec881214838?w=100&h=100&fit=crop&crop=face',
+    zoneId: '5',
+    routeId: '2',
+    pickupOrder: 1,
+    address: 'Kasuku Centre',
+    parentName: 'Lucy Wambui',
+    parentPhone: '+254 710 901 234',
+    status: 'active'
+  },
+  {
+    id: '10',
+    name: 'Brian Otieno',
+    admissionNumber: 'ST010',
+    age: 10,
+    gender: 'Male',
+    photoUrl: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=100&h=100&fit=crop&crop=face',
+    zoneId: '5',
+    routeId: '2',
+    pickupOrder: 2,
+    address: 'Wood Avenue Plaza',
+    parentName: 'Francis Otieno',
+    parentPhone: '+254 721 012 345',
+    status: 'active'
+  }
+];
