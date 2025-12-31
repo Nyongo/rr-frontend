@@ -1,5 +1,7 @@
 // API service for students management
-const API_BASE_URL = "http://localhost:3000";
+import { config } from "@/lib/config";
+
+const API_BASE_URL = config.API_BASE_URL;
 
 export interface School {
   id: string;

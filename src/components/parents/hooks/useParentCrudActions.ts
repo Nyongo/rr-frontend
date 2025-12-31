@@ -31,11 +31,9 @@ export const useParentCrudActions = ({
   };
 
   const handleImport = () => {
-    toast({
-      title: "Import Started!",
-      description: "Parent data import is being processed.",
-    });
-    setIsImportDialogOpen(false);
+    // Import dialog is now handled by ParentImportDialog component
+    // This function is kept for backward compatibility but does nothing
+    // The actual import logic is in ParentImportDialog
   };
 
   const handleParentClick = (parentId: string) => {

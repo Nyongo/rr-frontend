@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { login } from "@/services/authApi";
 
 const SignIn = () => {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const SignIn = () => {
     setIsLoading(true);
 
     try {
-      const response = await login({ email, password });
+      const response = await login({ email: identifier, password });
 
       if (response.response.code === 200) {
         // Store user data and token
@@ -56,7 +56,7 @@ const SignIn = () => {
       toast({
         title: "Authentication failed",
         description:
-          error instanceof Error ? error.message : "Invalid email or password",
+          error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive",
       });
     } finally {
@@ -94,15 +94,15 @@ const SignIn = () => {
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-medium">
-                Email
+              <Label htmlFor="identifier" className="text-gray-700 font-medium">
+                Email / Phone Number
               </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="teacher@school.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="identifier"
+                type="text"
+                placeholder="Enter email or phone number"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="border-2 border-gray-200 focus:border-blue-400 transition-colors"
                 required
                 autoComplete="username"

@@ -116,7 +116,10 @@ const ParentsStudents = () => {
           onAddParent={handleAddDialogOpen}
           isImportDialogOpen={isImportDialogOpen}
           setIsImportDialogOpen={setIsImportDialogOpen}
-          onImport={handleImport}
+          onImportSuccess={async () => {
+            await refetchParents();
+            await fetchStudents(1, 1000);
+          }}
         />
 
         {/* Stats Cards */}
@@ -144,7 +147,7 @@ const ParentsStudents = () => {
           setIsAddDialogOpen={setIsAddDialogOpen}
           isEditDialogOpen={isEditDialogOpen}
           setIsEditDialogOpen={setIsEditDialogOpen}
-          isImportDialogOpen={isImportDialogOpen}
+          isImportDialogOpen={false}
           setIsImportDialogOpen={setIsImportDialogOpen}
           isDeleteDialogOpen={isDeleteDialogOpen}
           setIsDeleteDialogOpen={setIsDeleteDialogOpen}

@@ -433,7 +433,7 @@ const SystemTelemetry = () => {
                               <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">Today</Badge>
                             )}
                           </h3>
-                          <div className="overflow-x-auto -mx-2 sm:mx-0">
+                          <div className="hidden md:block overflow-x-auto -mx-2 sm:mx-0">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -498,6 +498,79 @@ const SystemTelemetry = () => {
                               </TableBody>
                             </Table>
                           </div>
+                          {/* Mobile Card View */}
+                          <div className="md:hidden space-y-3">
+                            {failures.map((failure) => (
+                              <Card key={failure.id}>
+                                <CardContent className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-xs font-medium text-gray-500">Time</div>
+                                        <div className="text-sm font-medium text-gray-900">{format(failure.failureTime, "h:mm a")}</div>
+                                      </div>
+                                      <Badge variant="destructive" className="font-normal text-xs">
+                                        {failure.failureReason}
+                                      </Badge>
+                                    </div>
+                                    <div className="pt-2 border-t border-gray-100">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Device ID</div>
+                                          <div className="text-sm text-gray-700">{failure.deviceId}</div>
+                                        </div>
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Bus Reg. No.</div>
+                                          <div className="text-sm text-gray-700">{failure.busRegistration}</div>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <div className="text-xs font-medium text-gray-500 mb-1">RFID Tag</div>
+                                          <code className="text-xs bg-gray-100 px-2 py-1 rounded block">{failure.rfidTagId}</code>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Student Name</div>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                                {failure.student.name}
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="p-4 max-w-sm">
+                                              <div className="flex items-start gap-3">
+                                                <Avatar className="w-16 h-16">
+                                                  <AvatarImage src={failure.student.photo} alt={failure.student.name} />
+                                                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                                                    <User className="w-8 h-8" />
+                                                  </AvatarFallback>
+                                                </Avatar>
+                                                <div className="space-y-1">
+                                                  <h4 className="font-semibold text-lg">{failure.student.name}</h4>
+                                                  <p className="text-sm text-gray-600">
+                                                    <strong>Date of Birth:</strong> {format(new Date(failure.student.dateOfBirth), "MMM dd, yyyy")}
+                                                  </p>
+                                                  <p className="text-sm text-gray-600">
+                                                    <strong>Age:</strong> {calculateAge(failure.student.dateOfBirth)} years old
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </div>
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Minder</div>
+                                          <div className="text-sm text-gray-700">{failure.minderName}</div>
+                                        </div>
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">App Version</div>
+                                          <div className="text-sm text-gray-700">{failure.appVersion}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
                         </div>
                       ))
                   ) : (
@@ -537,22 +610,22 @@ const SystemTelemetry = () => {
                               <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">Today</Badge>
                             )}
                           </h3>
-                          <div className="overflow-x-auto">
+                          <div className="hidden md:block overflow-x-auto -mx-2 sm:mx-0">
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>Time</TableHead>
-                                  <TableHead>Trip Number</TableHead>
-                                  <TableHead>Parent Name</TableHead>
-                                  <TableHead>Phone Number</TableHead>
-                                  <TableHead>Failure Reason</TableHead>
+                                  <TableHead className="text-xs sm:text-sm">Time</TableHead>
+                                  <TableHead className="text-xs sm:text-sm">Trip Number</TableHead>
+                                  <TableHead className="text-xs sm:text-sm">Parent Name</TableHead>
+                                  <TableHead className="text-xs sm:text-sm">Phone Number</TableHead>
+                                  <TableHead className="text-xs sm:text-sm">Failure Reason</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {failures.map((failure) => (
                                   <TableRow key={failure.id}>
-                                    <TableCell>{format(failure.failureTime, "h:mm a")}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-xs sm:text-sm whitespace-nowrap">{format(failure.failureTime, "h:mm a")}</TableCell>
+                                    <TableCell className="text-xs sm:text-sm">
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <span className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
@@ -592,10 +665,10 @@ const SystemTelemetry = () => {
                                         </TooltipContent>
                                       </Tooltip>
                                     </TableCell>
-                                    <TableCell>{failure.parentName}</TableCell>
-                                    <TableCell>{failure.phoneNumber}</TableCell>
+                                    <TableCell className="text-xs sm:text-sm">{failure.parentName}</TableCell>
+                                    <TableCell className="text-xs sm:text-sm">{failure.phoneNumber}</TableCell>
                                     <TableCell>
-                                      <Badge variant="destructive" className="font-normal">
+                                      <Badge variant="destructive" className="font-normal text-xs">
                                         {failure.failureReason}
                                       </Badge>
                                     </TableCell>
@@ -603,6 +676,79 @@ const SystemTelemetry = () => {
                                 ))}
                               </TableBody>
                             </Table>
+                          </div>
+                          {/* Mobile Card View */}
+                          <div className="md:hidden space-y-3">
+                            {failures.map((failure) => (
+                              <Card key={failure.id}>
+                                <CardContent className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-xs font-medium text-gray-500">Time</div>
+                                        <div className="text-sm font-medium text-gray-900">{format(failure.failureTime, "h:mm a")}</div>
+                                      </div>
+                                      <Badge variant="destructive" className="font-normal text-xs">
+                                        {failure.failureReason}
+                                      </Badge>
+                                    </div>
+                                    <div className="pt-2 border-t border-gray-100">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Trip Number</div>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                                {failure.tripNumber}
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="p-4 max-w-md">
+                                              <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                  <MapPin className="w-4 h-4 text-blue-600" />
+                                                  <h4 className="font-semibold text-lg">{failure.trip.number}</h4>
+                                                </div>
+                                                <div className="space-y-2">
+                                                  <p className="text-sm">
+                                                    <strong>Route:</strong> {failure.trip.route}
+                                                  </p>
+                                                  <div className="flex items-center gap-2">
+                                                    <Clock className="w-4 h-4 text-gray-500" />
+                                                    <span className="text-sm">
+                                                      {failure.trip.startTime} - {failure.trip.endTime}
+                                                    </span>
+                                                  </div>
+                                                  <p className="text-sm">
+                                                    <strong>Driver:</strong> {failure.trip.driver}
+                                                  </p>
+                                                  <p className="text-sm">
+                                                    <strong>Bus:</strong> {failure.trip.busRegistration}
+                                                  </p>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-sm"><strong>Status:</strong></span>
+                                                    <Badge className={getStatusColor(failure.trip.status)}>
+                                                      {failure.trip.status}
+                                                    </Badge>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </div>
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Parent Name</div>
+                                          <div className="text-sm text-gray-700">{failure.parentName}</div>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <div className="text-xs font-medium text-gray-500 mb-1">Phone Number</div>
+                                          <div className="text-sm text-gray-700">{failure.phoneNumber}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                         </div>
                       ))

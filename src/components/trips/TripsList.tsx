@@ -125,8 +125,7 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
       trip.route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.bus.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.minder.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.route.school.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (trip.minder?.name.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
   if (loading) {
@@ -220,7 +219,9 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                     {/* Minder */}
                     <div className="flex items-center gap-2 text-sm">
                       <Shield className="w-4 h-4 text-teal-600" />
-                      <span className="text-gray-700">{trip.minder.name}</span>
+                      <span className="text-gray-700">
+                        {trip.minder?.name || "No minder assigned"}
+                      </span>
                     </div>
 
                     {/* Students Count */}
@@ -254,7 +255,7 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t">
                       <Button
                         variant="outline"
                         size="sm"
@@ -263,10 +264,10 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                           setSelectedTrip(trip);
                           setDetailsDialogOpen(true);
                         }}
-                        className="flex-1 text-blue-600 hover:bg-blue-50 border-blue-200"
+                        className="flex-1 min-w-0 text-blue-600 hover:bg-blue-50 border-blue-200 h-8 text-xs sm:h-9 sm:text-sm"
                       >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1 flex-shrink-0" />
+                        <span className="hidden sm:inline">View</span>
                       </Button>
                       {trip.status !== "COMPLETED" && trip.status !== "CANCELLED" && (
                         <Button
@@ -277,10 +278,10 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                             setTripToEnd(trip);
                             setEndTripDialogOpen(true);
                           }}
-                          className="flex-1 text-green-600 hover:bg-green-50 border-green-200"
+                          className="flex-1 min-w-0 text-green-600 hover:bg-green-50 border-green-200 h-8 text-xs sm:h-9 sm:text-sm"
                         >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          End Trip
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1 flex-shrink-0" />
+                          <span className="hidden sm:inline">End Trip</span>
                         </Button>
                       )}
                       <Button
@@ -290,11 +291,11 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                           e.stopPropagation();
                           onEditTrip(trip);
                         }}
-                        className="flex-1"
+                        className="flex-1 min-w-0 h-8 text-xs sm:h-9 sm:text-sm"
                         disabled={trip.status === "COMPLETED" || trip.status === "CANCELLED"}
                       >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1 flex-shrink-0" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                       <Button
                         variant="outline"
@@ -304,9 +305,10 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                           setTripToDelete(trip);
                           setDeleteDialogOpen(true);
                         }}
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 flex-shrink-0"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline ml-1">Delete</span>
                       </Button>
                     </div>
                   </CardContent>

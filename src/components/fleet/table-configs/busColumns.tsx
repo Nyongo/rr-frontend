@@ -23,66 +23,81 @@ export const createBusColumns = (
     key: "registrationNumber",
     label: "Registration No.",
     sortable: true,
+    className: "min-w-[120px]",
     render: (value) => (
-      <span className="font-medium text-gray-900">{value}</span>
+      <span className="font-medium text-gray-900 truncate block">{value}</span>
     ),
   },
   {
     key: "school",
     label: "School",
     sortable: true,
+    className: "hidden lg:table-cell min-w-[140px]",
     render: (value) => (
-      <span className="text-sm text-gray-700">{value?.name || "N/A"}</span>
+      <span className="text-sm text-gray-700 truncate block">{value?.name || "N/A"}</span>
     ),
   },
   {
     key: "make",
     label: "Make",
     sortable: true,
+    className: "hidden md:table-cell min-w-[100px]",
     render: (value) => (
-      <span className="text-sm font-medium text-gray-800">{value}</span>
+      <span className="text-sm font-medium text-gray-800 truncate block">{value}</span>
     ),
   },
   {
     key: "model",
     label: "Model",
     sortable: true,
-    render: (value) => <span className="text-sm text-gray-600">{value}</span>,
+    className: "hidden md:table-cell min-w-[100px]",
+    render: (value) => <span className="text-sm text-gray-600 truncate block">{value}</span>,
   },
   {
     key: "seatsCapacity",
     label: "Capacity",
     sortable: true,
-    render: (value) => `${value} seats`,
+    className: "hidden lg:table-cell",
+    render: (value) => <span className="truncate block">{value} seats</span>,
   },
   {
     key: "type",
     label: "Type",
     sortable: true,
+    className: "hidden sm:table-cell",
     render: (value) => getTypeBadge(value),
   },
   {
     key: "status",
     label: "Status",
     sortable: true,
+    className: "min-w-[80px]",
     render: (value) => getStatusBadge(value),
   },
   {
     key: "actions",
     label: "Actions",
+    className: "min-w-[100px]",
     render: (_, row) => (
-      <div className="flex space-x-2">
-        <Button variant="outline" size="sm" onClick={() => handleEditItem(row)}>
-          <Edit className="w-4 h-4" />
+      <div className="flex space-x-1 sm:space-x-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleEditItem(row)}
+          className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+        >
+          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline ml-1">Edit</span>
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="text-red-600 hover:bg-red-50"
+              className="text-red-600 hover:bg-red-50 h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline ml-1">Delete</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>

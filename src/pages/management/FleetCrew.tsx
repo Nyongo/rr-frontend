@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
+import { formatPhoneNumberForAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -171,7 +172,7 @@ const FleetCrew = () => {
         // For drivers, we need to convert the form data to API format
         const driverData = {
           name: newItem.name,
-          phoneNumber: newItem.phone,
+          phoneNumber: formatPhoneNumberForAPI(newItem.phone),
           schoolId: newItem.schoolId || "567431ac-cab3-41e5-b0ca-ee4de0953661",
         };
         await addDriver(driverData);
@@ -179,7 +180,7 @@ const FleetCrew = () => {
         // For minders, we need to convert the form data to API format
         const minderData = {
           name: newItem.name,
-          phoneNumber: newItem.phone,
+          phoneNumber: formatPhoneNumberForAPI(newItem.phone),
           schoolId: newItem.schoolId || "567431ac-cab3-41e5-b0ca-ee4de0953661", // Use selected school ID
           status: newItem.status || "Active",
           isActive: newItem.status === "Active" ? true : false,
@@ -265,7 +266,7 @@ const FleetCrew = () => {
         // For drivers, we need to convert the form data to API format
         const driverData = {
           name: newItem.name,
-          phoneNumber: newItem.phone,
+          phoneNumber: formatPhoneNumberForAPI(newItem.phone),
           schoolId:
             newItem.schoolId ||
             (editingItem as Driver).schoolId ||
@@ -296,7 +297,7 @@ const FleetCrew = () => {
         // For minders, we need to convert the form data to API format
         const minderData = {
           name: newItem.name,
-          phoneNumber: newItem.phone,
+          phoneNumber: formatPhoneNumberForAPI(newItem.phone),
           schoolId:
             newItem.schoolId ||
             (editingItem as Minder).schoolId ||

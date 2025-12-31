@@ -8,11 +8,11 @@ const AdminDashboard = () => {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <Shield className="w-8 h-8 text-red-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
             Admin Dashboard
           </h1>
-          <p className="text-gray-600 mt-1">System administration and configuration</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">System administration and configuration</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

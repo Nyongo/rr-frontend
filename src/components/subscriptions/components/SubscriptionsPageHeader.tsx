@@ -16,9 +16,9 @@ export const SubscriptionsPageHeader = ({ onAddSubscription }: SubscriptionsPage
         <p className="text-gray-600 mt-1">Manage customer subscriptions and billing</p>
       </div>
       
-      <div>
+      <div className="w-full sm:w-auto">
         <Button 
-          className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white" 
+          className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white w-full sm:w-auto" 
           onClick={onAddSubscription}
         >
           <Plus className="w-4 h-4 mr-2" />

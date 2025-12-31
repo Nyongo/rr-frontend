@@ -59,7 +59,7 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
         routeId: trip.routeId,
         busId: trip.busId,
         driverId: trip.driverId,
-        minderId: trip.minderId,
+        minderId: trip.minderId || "",
         tripDate: trip.tripDate ? trip.tripDate.split("T")[0] : today, // Use trip date if available
       });
     } else {
@@ -76,12 +76,7 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.routeId ||
-      !formData.busId ||
-      !formData.driverId ||
-      !formData.minderId
-    ) {
+    if (!formData.routeId || !formData.busId || !formData.driverId) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -135,7 +130,7 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
         await updateTrip(trip.id, {
           busId: formData.busId,
           driverId: formData.driverId,
-          minderId: formData.minderId,
+          minderId: formData.minderId || null,
           tripDate: currentDate,
           students: students,
         });
@@ -152,7 +147,7 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
           routeId: routeIdToSend,
           busId: formData.busId,
           driverId: formData.driverId,
-          minderId: formData.minderId,
+          minderId: formData.minderId || null,
           tripDate: currentDate,
           students: students,
         });
@@ -326,12 +321,15 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
           {/* Minder Selection */}
           <div className="space-y-2">
             <Label htmlFor="minderId">
-              Minder <span className="text-red-500">*</span>
+              Minder <span className="text-gray-500 text-xs">(Optional)</span>
             </Label>
             <Select
-              value={formData.minderId}
+              value={formData.minderId || "none"}
               onValueChange={(value) =>
-                setFormData({ ...formData, minderId: value })
+                setFormData({
+                  ...formData,
+                  minderId: value === "none" ? "" : value,
+                })
               }
               disabled={mindersLoading || !formData.routeId}
             >
@@ -342,11 +340,12 @@ const TripForm = ({ trip, isOpen, onClose, onSuccess }: TripFormProps) => {
                       ? "Select a route first"
                       : mindersLoading
                       ? "Loading minders..."
-                      : "Select a minder"
+                      : "Select a minder (optional)"
                   }
                 />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">None</SelectItem>
                 {filteredMinders.map((minder) => (
                   <SelectItem key={minder.id} value={minder.id}>
                     {minder.name} - {minder.phoneNumber}

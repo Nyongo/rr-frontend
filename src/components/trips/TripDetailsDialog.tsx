@@ -19,6 +19,7 @@ import {
   XCircle,
   Users,
 } from "lucide-react";
+import TripLocationTracker from "./TripLocationTracker";
 
 interface TripDetailsDialogProps {
   trip: Trip | null;
@@ -168,17 +169,26 @@ const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) =>
                 <Shield className="w-5 h-5 text-teal-600" />
                 <h4 className="font-semibold text-gray-800">Minder</h4>
               </div>
-              <p className="text-sm font-medium text-gray-800">{trip.minder.name}</p>
-              <p className="text-xs text-gray-600">{trip.minder.phoneNumber}</p>
+              {trip.minder ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{trip.minder.name}</p>
+                  <p className="text-xs text-gray-600">{trip.minder.phoneNumber}</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No minder assigned</p>
+              )}
             </div>
           </div>
+
+          {/* Real-time Location Tracking */}
+          <TripLocationTracker tripId={trip.id} tripStatus={trip.status} />
 
           {/* Location Information */}
           {(trip.startLocation || trip.endLocation || trip.startGps || trip.endGps) && (
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-800 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-gray-600" />
-                Location Information
+                Start/End Location Information
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {trip.startLocation && (

@@ -1,10 +1,12 @@
-const API_BASE_URL = "http://localhost:3000/academic-suite";
+import { config } from "@/lib/config";
+
+const API_BASE_URL = `${config.API_BASE_URL}/academic-suite`;
 
 export interface CreateTripRequest {
   routeId: string;
   busId: string;
   driverId: string;
-  minderId: string;
+  minderId: string | null;
   tripDate: string; // Date in YYYY-MM-DD format
   students: Array<{
     studentId: string;
@@ -14,7 +16,7 @@ export interface CreateTripRequest {
 export interface UpdateTripRequest {
   busId?: string;
   driverId?: string;
-  minderId?: string;
+  minderId?: string | null;
   tripDate?: string;
   students?: Array<{
     studentId: string;
@@ -52,7 +54,7 @@ export interface Trip {
   routeId: string;
   busId: string;
   driverId: string;
-  minderId: string;
+  minderId: string | null;
   tripDate: string; // ISO date string
   scheduledStartTime: string | null; // ISO date string
   actualStartTime: string | null; // ISO date string
@@ -91,7 +93,7 @@ export interface Trip {
     name: string;
     phoneNumber: string;
     pin: string;
-  };
+  } | null;
   tripStudents: TripStudent[];
 }
 

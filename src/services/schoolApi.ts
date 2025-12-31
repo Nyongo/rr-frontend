@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:3000/academic-suite";
+import { config } from "@/lib/config";
+
+const API_BASE_URL = `${config.API_BASE_URL}/academic-suite`;
 
 export interface CreateSchoolRequest {
   name: string;

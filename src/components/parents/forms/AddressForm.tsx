@@ -21,6 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, MapPin, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { config } from "@/lib/config";
 
 // Declare Google Maps types
 declare global {
@@ -109,7 +110,7 @@ const AddressForm = ({ onAddAddress, addresses }: AddressFormProps) => {
     // Create new script
     console.log("🟢 [STEP 4C] NO script found. Creating NEW script...");
     const script = document.createElement("script");
-    const apiKey = "AIzaSyD15fDdmqNVINe8CtDWJkUJD3TNVIbg_B8";
+    const apiKey = config.GOOGLE_MAPS_API_KEY;
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;

@@ -8,10 +8,12 @@ const Table = React.forwardRef<
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-x-auto -mx-2 sm:mx-0 rounded-lg border border-gray-200 shadow-sm">
+    {/* Scroll indicator for mobile */}
+    <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none sm:hidden z-10" />
     <div className="inline-block min-w-full align-middle">
     <table
       ref={ref}
-        className={cn("w-full caption-bottom text-sm bg-white min-w-[640px] sm:min-w-0", className)}
+        className={cn("w-full caption-bottom text-xs sm:text-sm bg-white min-w-[640px] sm:min-w-0", className)}
       {...props}
     />
     </div>
@@ -83,7 +85,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-semibold text-gray-700 bg-gray-50 [&:has([role=checkbox])]:pr-0",
+      "h-10 sm:h-12 px-2 sm:px-4 text-left align-middle font-semibold text-gray-700 bg-gray-50 [&:has([role=checkbox])]:pr-0 text-xs sm:text-sm",
       sortable && "cursor-pointer hover:bg-gray-100 select-none",
       resizable && "resize-x overflow-hidden",
       className
@@ -91,10 +93,10 @@ const TableHead = React.forwardRef<
     onClick={sortable ? onSort : undefined}
     {...props}
   >
-    <div className="flex items-center space-x-2">
-      <span>{children}</span>
+    <div className="flex items-center space-x-1 sm:space-x-2">
+      <span className="truncate">{children}</span>
       {sortable && (
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-shrink-0">
           {sortDirection === null && <ArrowUpDown className="w-3 h-3 text-gray-400" />}
           {sortDirection === 'asc' && <ChevronUp className="w-3 h-3 text-blue-600" />}
           {sortDirection === 'desc' && <ChevronDown className="w-3 h-3 text-blue-600" />}
@@ -111,7 +113,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle text-gray-600 [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("px-2 sm:px-4 py-2 sm:py-4 align-middle text-gray-600 [&:has([role=checkbox])]:pr-0 text-xs sm:text-sm", className)}
     {...props}
   />
 ))

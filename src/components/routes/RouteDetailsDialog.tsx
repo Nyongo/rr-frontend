@@ -305,7 +305,7 @@ const RouteDetailsDialog = ({ route, isOpen, onClose }: RouteDetailsDialogProps)
           </TabsContent>
 
           <TabsContent value="logs" className="pt-6">
-            <EntryExitLogs routeId={route.id.toString()} />
+            <EntryExitLogs routeId={route._originalRouteId || route.id.toString()} />
           </TabsContent>
         </Tabs>
       </DialogContent>
