@@ -1,0 +1,48 @@
+[
+  {
+    "tripId": "28b18231-d743-4d4a-96a9-cf8dbd43169d",
+    "latitude": -1.329409,
+    "longitude": 36.92507,
+    "timestamp": "2025-01-01T08:00:00.000Z",
+    "speed": 0,
+    "heading": 12,
+    "accuracy": 5.4
+  },
+  {
+    "tripId": "28b18231-d743-4d4a-96a9-cf8dbd43169d",
+    "latitude": -1.327336,
+    "longitude": 36.925517,
+    "timestamp": "2025-01-01T08:02:00.000Z",
+    "speed": 72.4,
+    "heading": 11,
+    "accuracy": 8.4
+  },
+  {
+    "tripId": "28b18231-d743-4d4a-96a9-cf8dbd43169d",
+    "latitude": -1.32536,
+    "longitude": 36.925888,
+    "timestamp": "2025-01-01T08:04:00.000Z",
+    "speed": 45.9,
+    "heading": 16,
+    "accuracy": 9.1
+  },
+  {
+    "tripId": "28b18231-d743-4d4a-96a9-cf8dbd43169d",
+    "latitude": -1.323452,
+    "longitude": 36.926641,
+    "timestamp": "2025-01-01T08:06:00.000Z",
+    "speed": 43.2,
+    "heading": 15,
+    "accuracy": 9.5
+  },
+  {
+    "tripId": "28b18231-d743-4d4a-96a9-cf8dbd43169d",
+    "latitude": -1.3192,
+    "longitude": 36.9275,
+    "timestamp": "2025-01-01T08:08:00.000Z",
+    "speed": 25.8,
+    "heading": 11,
+    "accuracy": 9.6
+  }
+]
+

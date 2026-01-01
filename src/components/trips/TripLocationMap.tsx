@@ -156,6 +156,49 @@ const TripLocationMap = ({
         infoWindow.open(map, marker);
       });
 
+      // Add start marker (first point) - done here to ensure map is ready
+      if (locationHistory && locationHistory.length > 0 && !startMarkerRef.current) {
+        const startLocation = locationHistory[0];
+        const startMarker = new window.google.maps.Marker({
+          position: { lat: startLocation.latitude, lng: startLocation.longitude },
+          map: map,
+          title: "Trip Start",
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#34A853", // Google Maps green for start
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 3,
+          },
+          label: {
+            text: "START",
+            color: "#ffffff",
+            fontSize: "11px",
+            fontWeight: "bold",
+          },
+          zIndex: 10,
+        });
+
+        const startInfoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <div style="font-weight: bold; margin-bottom: 4px; color: #34A853;">Trip Start</div>
+              <div style="font-size: 12px; color: #666;">
+                ${startLocation.latitude.toFixed(6)}, ${startLocation.longitude.toFixed(6)}
+                <br>Time: ${new Date(startLocation.timestamp).toLocaleTimeString()}
+              </div>
+            </div>
+          `,
+        });
+
+        startMarker.addListener("click", () => {
+          startInfoWindow.open(map, startMarker);
+        });
+
+        startMarkerRef.current = startMarker;
+      }
+
       // Draw route path if location history exists
       if (locationHistory && locationHistory.length > 0) {
         drawRoutePath(map, locationHistory, latitude, longitude);
@@ -219,7 +262,7 @@ const TripLocationMap = ({
     }
   }, [isGoogleMapsLoaded, showStreetView, latitude, longitude, heading]);
 
-  // Function to draw route path
+  // Function to draw route path using Directions Service for road-following route
   const drawRoutePath = (
     map: any,
     history: TripLocation[],
@@ -231,14 +274,15 @@ const TripLocationMap = ({
     // Remove existing polyline if it exists
     if (polylineRef.current) {
       polylineRef.current.setMap(null);
+      polylineRef.current = null;
     }
 
     // Create path from history + current location
-    const path: Array<{ lat: number; lng: number }> = [];
+    const allPoints: Array<{ lat: number; lng: number }> = [];
     
     // Add all historical locations
     history.forEach((location) => {
-      path.push({ lat: location.latitude, lng: location.longitude });
+      allPoints.push({ lat: location.latitude, lng: location.longitude });
     });
 
     // Add current location if it's different from the last history point
@@ -248,82 +292,42 @@ const TripLocationMap = ({
       lastHistoryPoint.latitude !== currentLat ||
       lastHistoryPoint.longitude !== currentLng
     ) {
-      path.push({ lat: currentLat, lng: currentLng });
+      allPoints.push({ lat: currentLat, lng: currentLng });
     }
 
     // Only draw if we have at least 2 points
-    if (path.length < 2) return;
+    if (allPoints.length < 2) return;
 
-    // Create polyline
+    // Always use polyline to show ACTUAL path taken (better for tracking/auditing)
+    // Since GPS points are logged every ~2 minutes, we have enough points for a smooth path
+    // This shows where the bus actually went, not the optimal route
+    drawSmoothPolyline(map, allPoints);
+  };
+
+  // Draw smooth polyline with Google Maps-like styling
+  const drawSmoothPolyline = (
+    map: any,
+    points: Array<{ lat: number; lng: number }>
+  ) => {
     const polyline = new window.google.maps.Polyline({
-      path: path,
+      path: points,
       geodesic: true,
-      strokeColor: "#3b82f6", // Blue color
-      strokeOpacity: 0.8,
-      strokeWeight: 4,
+      strokeColor: "#4285F4", // Google Maps blue color
+      strokeOpacity: 0.9,
+      strokeWeight: 5, // Thicker line like Google Maps navigation
+      zIndex: 1,
       map: map,
     });
 
     polylineRef.current = polyline;
 
-    // Add start marker (first point)
-    if (history.length > 0 && !startMarkerRef.current) {
-      const startLocation = history[0];
-      const startMarker = new window.google.maps.Marker({
-        position: { lat: startLocation.latitude, lng: startLocation.longitude },
-        map: map,
-        title: "Trip Start",
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: "#10b981", // Green for start
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-        },
-        label: {
-          text: "S",
-          color: "#ffffff",
-          fontSize: "12px",
-          fontWeight: "bold",
-        },
-      });
-
-      const startInfoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 8px;">
-            <div style="font-weight: bold; margin-bottom: 4px; color: #10b981;">Trip Start</div>
-            <div style="font-size: 12px; color: #666;">
-              ${startLocation.latitude.toFixed(6)}, ${startLocation.longitude.toFixed(6)}
-              <br>Time: ${new Date(startLocation.timestamp).toLocaleTimeString()}
-            </div>
-          </div>
-        `,
-      });
-
-      startMarker.addListener("click", () => {
-        startInfoWindow.open(map, startMarker);
-      });
-
-      startMarkerRef.current = startMarker;
-    }
-
     // Fit map bounds to show entire route
-    if (path.length > 0) {
+    if (points.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
-      path.forEach((point) => {
+      points.forEach((point) => {
         bounds.extend(point);
       });
-      map.fitBounds(bounds);
-
-      // Add some padding
-      const padding = 50;
-      map.fitBounds(bounds, {
-        top: padding,
-        right: padding,
-        bottom: padding,
-        left: padding,
-      });
+      map.fitBounds(bounds, { padding: 50 });
     }
   };
 
@@ -353,9 +357,8 @@ const TripLocationMap = ({
     }
 
     // Update route path if location history exists
-    if (locationHistory && locationHistory.length > 0 && mapInstanceRef.current) {
-      drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
-    }
+    // Note: We don't update route on every location change to avoid too many API calls
+    // Route is only updated when locationHistory prop changes
 
     // Update Street View position if it's visible
     if (streetViewInstanceRef.current && showStreetView) {
