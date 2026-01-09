@@ -301,13 +301,14 @@ const TripLocationMap = ({
     // Always use polyline to show ACTUAL path taken (better for tracking/auditing)
     // Since GPS points are logged every ~2 minutes, we have enough points for a smooth path
     // This shows where the bus actually went, not the optimal route
-    drawSmoothPolyline(map, allPoints);
+    drawSmoothPolyline(map, allPoints, true); // Fit bounds on initial draw
   };
 
   // Draw smooth polyline with Google Maps-like styling
   const drawSmoothPolyline = (
     map: any,
-    points: Array<{ lat: number; lng: number }>
+    points: Array<{ lat: number; lng: number }>,
+    shouldFitBounds: boolean = true
   ) => {
     const polyline = new window.google.maps.Polyline({
       path: points,
@@ -321,8 +322,8 @@ const TripLocationMap = ({
 
     polylineRef.current = polyline;
 
-    // Fit map bounds to show entire route
-    if (points.length > 0) {
+    // Only fit bounds on initial draw, not on updates
+    if (shouldFitBounds && points.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
       points.forEach((point) => {
         bounds.extend(point);
@@ -331,17 +332,19 @@ const TripLocationMap = ({
     }
   };
 
-  // Update marker position when location changes (optimized - no route redraw)
+  // Smooth marker movement and map panning (like Google Maps/Uber)
+  // Google Maps panTo() is already smooth, so we just use it directly
   useEffect(() => {
     if (!markerRef.current || !mapInstanceRef.current) return;
 
     const newPosition = { lat: latitude, lng: longitude };
+    
+    // Update marker position (Google Maps handles smooth transitions internally)
     markerRef.current.setPosition(newPosition);
     
-    // Only auto-center if we don't have a route path (to avoid jumping)
-    if (!polylineRef.current) {
-      mapInstanceRef.current.setCenter(newPosition);
-    }
+    // Smoothly pan map to follow marker (panTo is smooth by default in Google Maps)
+    // This creates the smooth following effect like Uber/Google Maps navigation
+    mapInstanceRef.current.panTo(newPosition);
 
     // Update marker rotation if heading is provided
     if (heading !== undefined) {
@@ -366,9 +369,9 @@ const TripLocationMap = ({
         });
       }
     }
-  }, [latitude, longitude, heading, showStreetView]); // Removed locationHistory to prevent re-renders
+  }, [latitude, longitude, heading, showStreetView]);
 
-  // Update route path separately and only when history length changes significantly
+  // Extend route path smoothly as new points arrive (like Google Maps navigation)
   const lastHistoryLengthRef = useRef<number>(0);
   useEffect(() => {
     if (!mapInstanceRef.current || !locationHistory || locationHistory.length === 0) {
@@ -376,13 +379,50 @@ const TripLocationMap = ({
       return;
     }
     
-    // Only redraw route if we have significant new points (every 5 points or so)
     const currentLength = locationHistory.length;
-    if (currentLength - lastHistoryLengthRef.current >= 5 || lastHistoryLengthRef.current === 0) {
+    
+    if (lastHistoryLengthRef.current === 0) {
+      // Initial route draw
       drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
       lastHistoryLengthRef.current = currentLength;
+    } else if (currentLength > lastHistoryLengthRef.current) {
+      // New points added - extend the polyline smoothly instead of redrawing
+      if (polylineRef.current) {
+        const currentPath = polylineRef.current.getPath();
+        const newPoints: Array<{ lat: number; lng: number }> = [];
+        
+        // Get existing path points
+        currentPath.forEach((point: any) => {
+          newPoints.push({ lat: point.lat(), lng: point.lng() });
+        });
+        
+        // Add new points from history
+        const newHistoryPoints = locationHistory.slice(lastHistoryLengthRef.current);
+        newHistoryPoints.forEach((location) => {
+          newPoints.push({ lat: location.latitude, lng: location.longitude });
+        });
+        
+        // Add current location if different from last point
+        const lastPoint = newPoints[newPoints.length - 1];
+        if (!lastPoint || 
+            Math.abs(lastPoint.lat - latitude) > 0.0001 || 
+            Math.abs(lastPoint.lng - longitude) > 0.0001) {
+          newPoints.push({ lat: latitude, lng: longitude });
+        }
+        
+        // Update polyline path smoothly
+        polylineRef.current.setPath(newPoints);
+        
+        // Don't fit bounds on every update - let the smooth pan handle it
+        // This prevents the map from jumping around
+      } else {
+        // No existing polyline, draw full route
+        drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
+      }
+      
+      lastHistoryLengthRef.current = currentLength;
     }
-  }, [locationHistory?.length, latitude, longitude]); // Only depend on length, not full array
+  }, [locationHistory?.length, latitude, longitude]);
 
   if (mapError && !isGoogleMapsLoaded) {
     return (

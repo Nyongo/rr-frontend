@@ -47,7 +47,7 @@ const TrackStudent = () => {
   // Use refs to prevent unnecessary re-renders
   const locationHistoryRef = useRef<TrackingLocation[]>([]);
   const lastLocationUpdateRef = useRef<number>(0);
-  const updateThrottleMs = 1000; // Update at most once per second
+  const updateThrottleMs = 500; // Update every 500ms for smoother animation
 
   // WebSocket connection for real-time tracking (when tracking token is available)
   const {
@@ -93,8 +93,8 @@ const TrackStudent = () => {
       
       // Add to history using ref to avoid re-renders
       locationHistoryRef.current = [...locationHistoryRef.current, trackingLocation];
-      // Update state less frequently - only every 5 updates or every 5 seconds
-      if (locationHistoryRef.current.length % 5 === 0) {
+      // Update state more frequently for smoother route updates (every 2 points)
+      if (locationHistoryRef.current.length % 2 === 0 || locationHistoryRef.current.length === 1) {
         setLocationHistory([...locationHistoryRef.current]);
       }
     },
