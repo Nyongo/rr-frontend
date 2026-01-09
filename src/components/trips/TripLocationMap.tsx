@@ -21,6 +21,32 @@ interface TripLocationMapProps {
   className?: string;
 }
 
+// Validate and normalize coordinates
+const validateCoordinates = (lat: number, lng: number): { lat: number; lng: number; valid: boolean } => {
+  // Check if coordinates are valid numbers
+  if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+    console.error('Invalid coordinates:', { lat, lng });
+    return { lat: 0, lng: 0, valid: false };
+  }
+
+  // Check if coordinates are within valid ranges
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    console.error('Coordinates out of range:', { lat, lng });
+    return { lat: 0, lng: 0, valid: false };
+  }
+
+  // Check if coordinates might be swapped (common error)
+  // If lat is > 90 or < -90, or lng is > 180 or < -180, they might be swapped
+  // Also check if values look like they're in wrong order (e.g., lat > 90 but lng is reasonable)
+  if ((Math.abs(lat) > 90 && Math.abs(lng) <= 90) || (Math.abs(lng) > 180 && Math.abs(lat) <= 90)) {
+    console.warn('Coordinates might be swapped, attempting to fix:', { lat, lng });
+    // Swap them
+    return { lat: lng, lng: lat, valid: true };
+  }
+
+  return { lat, lng, valid: true };
+};
+
 const TripLocationMap = ({
   latitude,
   longitude,
@@ -40,6 +66,11 @@ const TripLocationMap = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showStreetView, setShowStreetView] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+
+  // Validate and normalize coordinates
+  const validatedCoords = validateCoordinates(latitude, longitude);
+  const validLat = validatedCoords.lat;
+  const validLng = validatedCoords.lng;
 
   // Load Google Maps API
   useEffect(() => {
@@ -107,9 +138,16 @@ const TripLocationMap = ({
       setIsLoading(true);
       setMapError(null);
 
-      // Initialize map
+      // Validate coordinates before initializing map
+      if (!validatedCoords.valid) {
+        setMapError(`Invalid coordinates: ${latitude}, ${longitude}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // Initialize map with validated coordinates
       const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat: latitude, lng: longitude },
+        center: { lat: validLat, lng: validLng },
         zoom: 15,
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         streetViewControl: true,
@@ -120,9 +158,9 @@ const TripLocationMap = ({
 
       mapInstanceRef.current = map;
 
-      // Add marker
+      // Add marker with validated coordinates
       const marker = new window.google.maps.Marker({
-        position: { lat: latitude, lng: longitude },
+        position: { lat: validLat, lng: validLng },
         map: map,
         title: "Trip Location",
         icon: {
@@ -210,7 +248,7 @@ const TripLocationMap = ({
       setMapError("Failed to initialize map");
       setIsLoading(false);
     }
-  }, [isGoogleMapsLoaded]); // Only initialize once when maps loads
+  }, [isGoogleMapsLoaded, validLat, validLng]); // Re-initialize if coordinates change significantly
 
   // Initialize Street View
   useEffect(() => {
@@ -280,20 +318,29 @@ const TripLocationMap = ({
     // Create path from history + current location
     const allPoints: Array<{ lat: number; lng: number }> = [];
     
-    // Add all historical locations
+    // Add all historical locations with validation
     history.forEach((location) => {
-      allPoints.push({ lat: location.latitude, lng: location.longitude });
+      const validated = validateCoordinates(location.latitude, location.longitude);
+      if (validated.valid) {
+        allPoints.push({ lat: validated.lat, lng: validated.lng });
+      } else {
+        console.warn('Skipping invalid location in history:', location);
+      }
     });
 
-    // Add current location if it's different from the last history point
-    const lastHistoryPoint = history[history.length - 1];
-    if (
-      !lastHistoryPoint ||
-      lastHistoryPoint.latitude !== currentLat ||
-      lastHistoryPoint.longitude !== currentLng
-    ) {
-      allPoints.push({ lat: currentLat, lng: currentLng });
-    }
+      // Add current location if it's different from the last history point
+      const lastHistoryPoint = history[history.length - 1];
+      if (
+        !lastHistoryPoint ||
+        Math.abs(lastHistoryPoint.latitude - currentLat) > 0.0001 ||
+        Math.abs(lastHistoryPoint.longitude - currentLng) > 0.0001
+      ) {
+        // Validate current location coordinates
+        const validated = validateCoordinates(currentLat, currentLng);
+        if (validated.valid) {
+          allPoints.push({ lat: validated.lat, lng: validated.lng });
+        }
+      }
 
     // Only draw if we have at least 2 points
     if (allPoints.length < 2) return;
@@ -337,7 +384,29 @@ const TripLocationMap = ({
   useEffect(() => {
     if (!markerRef.current || !mapInstanceRef.current) return;
 
-    const newPosition = { lat: latitude, lng: longitude };
+    // Validate coordinates on each update
+    const validated = validateCoordinates(latitude, longitude);
+    if (!validated.valid) {
+      console.error('Invalid coordinates received:', { 
+        latitude, 
+        longitude, 
+        latType: typeof latitude, 
+        lngType: typeof longitude 
+      });
+      return;
+    }
+
+    // Log coordinate updates for debugging (only in dev mode)
+    if (import.meta.env.DEV) {
+      console.log('📍 Location update:', {
+        received: { lat: latitude, lng: longitude },
+        validated: { lat: validated.lat, lng: validated.lng },
+        heading,
+        speed
+      });
+    }
+
+    const newPosition = { lat: validated.lat, lng: validated.lng };
     
     // Update marker position (Google Maps handles smooth transitions internally)
     markerRef.current.setPosition(newPosition);
@@ -369,7 +438,7 @@ const TripLocationMap = ({
         });
       }
     }
-  }, [latitude, longitude, heading, showStreetView]);
+  }, [validLat, validLng, heading, showStreetView]);
 
   // Extend route path smoothly as new points arrive (like Google Maps navigation)
   const lastHistoryLengthRef = useRef<number>(0);
@@ -396,18 +465,24 @@ const TripLocationMap = ({
           newPoints.push({ lat: point.lat(), lng: point.lng() });
         });
         
-        // Add new points from history
+        // Add new points from history with validation
         const newHistoryPoints = locationHistory.slice(lastHistoryLengthRef.current);
         newHistoryPoints.forEach((location) => {
-          newPoints.push({ lat: location.latitude, lng: location.longitude });
+          const validated = validateCoordinates(location.latitude, location.longitude);
+          if (validated.valid) {
+            newPoints.push({ lat: validated.lat, lng: validated.lng });
+          } else {
+            console.warn('Skipping invalid location:', location);
+          }
         });
         
         // Add current location if different from last point
         const lastPoint = newPoints[newPoints.length - 1];
-        if (!lastPoint || 
-            Math.abs(lastPoint.lat - latitude) > 0.0001 || 
-            Math.abs(lastPoint.lng - longitude) > 0.0001) {
-          newPoints.push({ lat: latitude, lng: longitude });
+        const validatedCurrent = validateCoordinates(latitude, longitude);
+        if (validatedCurrent.valid && (!lastPoint || 
+            Math.abs(lastPoint.lat - validatedCurrent.lat) > 0.0001 || 
+            Math.abs(lastPoint.lng - validatedCurrent.lng) > 0.0001)) {
+          newPoints.push({ lat: validatedCurrent.lat, lng: validatedCurrent.lng });
         }
         
         // Update polyline path smoothly
@@ -432,16 +507,38 @@ const TripLocationMap = ({
             <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600">{mapError}</p>
             <p className="text-sm text-gray-500 mt-2">
-              Showing coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+              Received coordinates: {latitude?.toFixed(6) || 'N/A'}, {longitude?.toFixed(6) || 'N/A'}
             </p>
+            {validatedCoords.valid && (
+              <p className="text-sm text-green-600 mt-1">
+                Validated coordinates: {validLat.toFixed(6)}, {validLng.toFixed(6)}
+              </p>
+            )}
+            {!validatedCoords.valid && (
+              <p className="text-sm text-red-600 mt-1">
+                ⚠️ Coordinates are invalid. Please check the data source.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  // Show coordinate info in dev mode
+  const showDebugInfo = import.meta.env.DEV && validatedCoords.valid;
+
   return (
     <div className={`space-y-3 ${className}`}>
+      {/* Debug Info (dev mode only) */}
+      {showDebugInfo && (
+        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+          <p>📍 Lat: {validLat.toFixed(6)}, Lng: {validLng.toFixed(6)}</p>
+          {heading !== undefined && <p>🧭 Heading: {heading}°</p>}
+          {speed !== undefined && <p>⚡ Speed: {speed.toFixed(1)} km/h</p>}
+        </div>
+      )}
+
       {/* Map View */}
       <div className="relative">
         <div

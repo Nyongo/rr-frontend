@@ -68,6 +68,31 @@ const TrackStudent = () => {
       }
       lastLocationUpdateRef.current = now;
 
+      // Validate coordinates before processing
+      if (typeof location.latitude !== 'number' || typeof location.longitude !== 'number' ||
+          isNaN(location.latitude) || isNaN(location.longitude)) {
+        console.error('Invalid location data received:', location);
+        return;
+      }
+
+      // Check if coordinates are in valid ranges
+      if (location.latitude < -90 || location.latitude > 90 || 
+          location.longitude < -180 || location.longitude > 180) {
+        console.error('Coordinates out of valid range:', location);
+        return;
+      }
+
+      // Log for debugging
+      if (import.meta.env.DEV) {
+        console.log('🔵 WebSocket location update:', {
+          lat: location.latitude,
+          lng: location.longitude,
+          speed: location.speed,
+          heading: location.heading,
+          timestamp: location.timestamp
+        });
+      }
+
       // Update current location from WebSocket
       const trackingLocation: TrackingLocation = {
         id: locationHistoryRef.current.length + 1,
