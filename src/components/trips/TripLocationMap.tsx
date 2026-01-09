@@ -210,7 +210,7 @@ const TripLocationMap = ({
       setMapError("Failed to initialize map");
       setIsLoading(false);
     }
-  }, [isGoogleMapsLoaded, latitude, longitude, heading, speed, locationHistory]);
+  }, [isGoogleMapsLoaded]); // Only initialize once when maps loads
 
   // Initialize Street View
   useEffect(() => {
@@ -331,7 +331,7 @@ const TripLocationMap = ({
     }
   };
 
-  // Update marker position and route when location changes
+  // Update marker position when location changes (optimized - no route redraw)
   useEffect(() => {
     if (!markerRef.current || !mapInstanceRef.current) return;
 
@@ -356,10 +356,6 @@ const TripLocationMap = ({
       });
     }
 
-    // Update route path if location history exists
-    // Note: We don't update route on every location change to avoid too many API calls
-    // Route is only updated when locationHistory prop changes
-
     // Update Street View position if it's visible
     if (streetViewInstanceRef.current && showStreetView) {
       streetViewInstanceRef.current.setPosition(newPosition);
@@ -370,7 +366,23 @@ const TripLocationMap = ({
         });
       }
     }
-  }, [latitude, longitude, heading, showStreetView, locationHistory]);
+  }, [latitude, longitude, heading, showStreetView]); // Removed locationHistory to prevent re-renders
+
+  // Update route path separately and only when history length changes significantly
+  const lastHistoryLengthRef = useRef<number>(0);
+  useEffect(() => {
+    if (!mapInstanceRef.current || !locationHistory || locationHistory.length === 0) {
+      lastHistoryLengthRef.current = 0;
+      return;
+    }
+    
+    // Only redraw route if we have significant new points (every 5 points or so)
+    const currentLength = locationHistory.length;
+    if (currentLength - lastHistoryLengthRef.current >= 5 || lastHistoryLengthRef.current === 0) {
+      drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
+      lastHistoryLengthRef.current = currentLength;
+    }
+  }, [locationHistory?.length, latitude, longitude]); // Only depend on length, not full array
 
   if (mapError && !isGoogleMapsLoaded) {
     return (

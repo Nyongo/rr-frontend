@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,11 @@ const TrackStudent = () => {
   const [currentLocation, setCurrentLocation] = useState<TrackingLocation | null>(null);
   const [locationHistory, setLocationHistory] = useState<TrackingLocation[]>([]);
 
+  // Use refs to prevent unnecessary re-renders
+  const locationHistoryRef = useRef<TrackingLocation[]>([]);
+  const lastLocationUpdateRef = useRef<number>(0);
+  const updateThrottleMs = 1000; // Update at most once per second
+
   // WebSocket connection for real-time tracking (when tracking token is available)
   const {
     currentLocation: wsCurrentLocation,
@@ -56,9 +61,16 @@ const TrackStudent = () => {
     trackingToken: trackingToken || null,
     enabled: !!trackingToken && activeTrip?.status === "IN_PROGRESS",
     onLocationUpdate: (location) => {
+      // Throttle updates to prevent too frequent re-renders
+      const now = Date.now();
+      if (now - lastLocationUpdateRef.current < updateThrottleMs) {
+        return; // Skip this update if too soon
+      }
+      lastLocationUpdateRef.current = now;
+
       // Update current location from WebSocket
       const trackingLocation: TrackingLocation = {
-        id: locationHistory.length + 1,
+        id: locationHistoryRef.current.length + 1,
         tripId: activeTrip?.id || "",
         latitude: location.latitude,
         longitude: location.longitude,
@@ -67,9 +79,24 @@ const TrackStudent = () => {
         heading: location.heading,
         accuracy: location.accuracy,
       };
-      setCurrentLocation(trackingLocation);
-      // Add to history
-      setLocationHistory((prev) => [...prev, trackingLocation]);
+      
+      // Update state with functional updates to avoid dependency issues
+      setCurrentLocation((prev) => {
+        // Only update if location actually changed
+        if (prev && 
+            prev.latitude === trackingLocation.latitude && 
+            prev.longitude === trackingLocation.longitude) {
+          return prev;
+        }
+        return trackingLocation;
+      });
+      
+      // Add to history using ref to avoid re-renders
+      locationHistoryRef.current = [...locationHistoryRef.current, trackingLocation];
+      // Update state less frequently - only every 5 updates or every 5 seconds
+      if (locationHistoryRef.current.length % 5 === 0) {
+        setLocationHistory([...locationHistoryRef.current]);
+      }
     },
     onSubscriptionConfirmed: (data) => {
       // Update pickup/dropoff status from subscription data
@@ -84,9 +111,23 @@ const TrackStudent = () => {
     },
   });
 
+  // Sync ref with state when locationHistory changes from API
+  useEffect(() => {
+    if (trackingData?.locationHistory && trackingData.locationHistory.length > 0) {
+      locationHistoryRef.current = trackingData.locationHistory;
+      setLocationHistory(trackingData.locationHistory);
+    }
+  }, [trackingData?.locationHistory]);
+
   // Use WebSocket location if available, otherwise use API location
-  const displayLocation = wsCurrentLocation || currentLocation || trackingData?.currentLocation;
-  const displayLocationHistory = locationHistory.length > 0 ? locationHistory : (trackingData?.locationHistory || []);
+  // Memoize to prevent unnecessary re-renders
+  const displayLocation = useMemo(() => {
+    return wsCurrentLocation || currentLocation || trackingData?.currentLocation;
+  }, [wsCurrentLocation, currentLocation, trackingData?.currentLocation]);
+  
+  const displayLocationHistory = useMemo(() => {
+    return locationHistory.length > 0 ? locationHistory : (trackingData?.locationHistory || []);
+  }, [locationHistory, trackingData?.locationHistory]);
 
   // Load student and trip if tracking token is in URL (from email link)
   useEffect(() => {
