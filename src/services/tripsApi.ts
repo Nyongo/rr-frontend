@@ -264,6 +264,39 @@ export const endTrip = async (tripId: string): Promise<{ success: boolean; data:
   return result;
 };
 
+// Get active trips for a student by student ID or admission number
+export const getTripsByStudent = async (
+  studentId?: string,
+  admissionNumber?: string
+): Promise<GetTripsResponse> => {
+  const params = new URLSearchParams({
+    page: "1",
+    pageSize: "10",
+  });
+
+  if (studentId) {
+    params.append("studentId", studentId);
+  }
+
+  if (admissionNumber) {
+    params.append("admissionNumber", admissionNumber);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/trips?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch trips for student");
+  }
+
+  const result = await response.json();
+
+  if (result.response?.code && result.response.code !== 200) {
+    throw new Error(result.response.message || "API request failed");
+  }
+
+  return result;
+};
+
 
 
 // Tracking response interfaces
