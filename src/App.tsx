@@ -35,6 +35,7 @@ import MindersMobileTrips from "./pages/minders-mobile/trips";
 import MindersMobileProfile from "./pages/minders-mobile/profile";
 import MindersMobileResetPin from "./pages/minders-mobile/reset-pin";
 import Website from "./pages/website";
+import TrackStudent from "./pages/parent-tracking/TrackStudent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -247,6 +248,10 @@ const App = () => {
 
               {/* Website Routes */}
               <Route path="/website" element={<Website />} />
+
+              {/* Parent Tracking Route - Unauthenticated */}
+              <Route path="/track/:trackingToken" element={<TrackStudent />} />
+              <Route path="/track" element={<TrackStudent />} />
 
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />
