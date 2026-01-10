@@ -24,11 +24,20 @@ export interface CreateRouteRequest {
 }
 
 export interface UpdateRouteRequest {
+  name?: string;
+  description?: string;
+  status?: "Active" | "Inactive";
+  tripType?: "MORNING_PICKUP" | "EVENING_DROPOFF" | "FIELD_TRIP" | "EXTRA_CURRICULUM" | "EMERGENCY";
   busId?: string | null;
   driverId?: string | null;
   minderId?: string | null;
   students?: string[]; // Array of student IDs to add
+  studentsWithRiderType?: Array<{
+    studentId: string;
+    riderType: "DAILY" | "OCCASIONAL";
+  }>;
   studentsToRemove?: string[]; // Array of student IDs to remove
+  isActive?: boolean;
 }
 
 export interface RouteResponse {
@@ -196,12 +205,43 @@ export const updateRoute = async (
   routeId: string,
   routeData: UpdateRouteRequest
 ): Promise<CreateRouteResponse> => {
+  // Validate and clean the payload before sending
+  const cleanedPayload: UpdateRouteRequest = {
+    ...routeData,
+  };
+
+  // Ensure studentsWithRiderType has valid studentIds
+  if (cleanedPayload.studentsWithRiderType) {
+    cleanedPayload.studentsWithRiderType = cleanedPayload.studentsWithRiderType
+      .filter((student) => student.studentId && student.studentId.trim() !== "")
+      .map((student) => ({
+        studentId: student.studentId.trim(),
+        riderType: student.riderType,
+      }));
+  }
+
+  // Ensure students array has valid IDs
+  if (cleanedPayload.students) {
+    cleanedPayload.students = cleanedPayload.students
+      .filter((id) => id && typeof id === "string" && id.trim() !== "")
+      .map((id) => id.trim());
+  }
+
+  // Ensure studentsToRemove array has valid IDs
+  if (cleanedPayload.studentsToRemove) {
+    cleanedPayload.studentsToRemove = cleanedPayload.studentsToRemove
+      .filter((id) => id && typeof id === "string" && id.trim() !== "")
+      .map((id) => id.trim());
+  }
+
+  console.log("🔄 Sending route update request:", JSON.stringify(cleanedPayload, null, 2));
+
   const response = await fetch(`${API_BASE_URL}/routes/${routeId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(routeData),
+    body: JSON.stringify(cleanedPayload),
   });
 
   const result = await response.json();

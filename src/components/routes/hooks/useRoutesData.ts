@@ -408,39 +408,91 @@ export const useRoutesData = () => {
         }
 
         // Compare students to determine what to add/remove
-        const oldStudentIds = new Set(
+        // Create a map of old students by their ID for easy lookup
+        const oldStudentMap = new Map(
           editingRoute.students
             .filter((s) => s._originalStudentId)
-            .map((s) => s._originalStudentId!)
+            .map((s) => [s._originalStudentId!, s])
         );
-        const newStudentIds = new Set(
+        
+        const newStudentMap = new Map(
           routeData.students
             .filter((s) => s._originalStudentId)
-            .map((s) => s._originalStudentId!)
+            .map((s) => [s._originalStudentId!, s])
         );
 
-        // Students to add (in new but not in old)
-        const studentsToAdd = Array.from(newStudentIds).filter(
-          (id) => !oldStudentIds.has(id)
-        );
+        // Students to add (in new but not in old) - use studentsWithRiderType to include rider type
+        const studentsToAdd: Array<{ studentId: string; riderType: "DAILY" | "OCCASIONAL" }> = [];
+        for (const [studentId, student] of newStudentMap) {
+          if (!oldStudentMap.has(studentId)) {
+            const riderType = (student.riderType?.toUpperCase() || "DAILY") as "DAILY" | "OCCASIONAL";
+            studentsToAdd.push({
+              studentId: studentId.trim(),
+              riderType,
+            });
+          }
+        }
+        
         if (studentsToAdd.length > 0) {
-          updatePayload.students = studentsToAdd;
+          updatePayload.studentsWithRiderType = studentsToAdd;
         }
 
         // Students to remove (in old but not in new)
-        const studentsToRemove = Array.from(oldStudentIds).filter(
-          (id) => !newStudentIds.has(id)
+        const studentsToRemove = Array.from(oldStudentMap.keys()).filter(
+          (id) => !newStudentMap.has(id)
         );
         if (studentsToRemove.length > 0) {
-          updatePayload.studentsToRemove = studentsToRemove;
+          updatePayload.studentsToRemove = studentsToRemove.map((id) => id.trim());
+        }
+        
+        // Also check for students whose rider type changed
+        // If a student exists in both but rider type changed, we need to update it
+        const studentsWithRiderTypeChange: Array<{ studentId: string; riderType: "DAILY" | "OCCASIONAL" }> = [];
+        for (const [studentId, newStudent] of newStudentMap) {
+          if (oldStudentMap.has(studentId)) {
+            const oldStudent = oldStudentMap.get(studentId)!;
+            const oldRiderType = (oldStudent.riderType?.toUpperCase() || "DAILY") as "DAILY" | "OCCASIONAL";
+            const newRiderType = (newStudent.riderType?.toUpperCase() || "DAILY") as "DAILY" | "OCCASIONAL";
+            
+            if (oldRiderType !== newRiderType) {
+              studentsWithRiderTypeChange.push({
+                studentId: studentId.trim(),
+                riderType: newRiderType,
+              });
+            }
+          }
+        }
+        
+        // If there are rider type changes, merge them with the new students
+        if (studentsWithRiderTypeChange.length > 0) {
+          if (!updatePayload.studentsWithRiderType) {
+            updatePayload.studentsWithRiderType = [];
+          }
+          // Merge with existing students to add (avoid duplicates)
+          const existingIds = new Set(updatePayload.studentsWithRiderType.map(s => s.studentId));
+          studentsWithRiderTypeChange.forEach(student => {
+            if (!existingIds.has(student.studentId)) {
+              updatePayload.studentsWithRiderType!.push(student);
+            }
+          });
         }
 
         // Only send update if there are changes
         if (Object.keys(updatePayload).length > 0) {
-        const response = await updateRoute(
-          editingRoute.id.toString(),
+          // Use the original UUID from API, not the numeric ID
+          const routeId = editingRoute._originalRouteId;
+          console.log("🔄 Updating route - editingRoute:", editingRoute);
+          console.log("🔄 Route ID (UUID):", routeId);
+          console.log("🔄 Route update payload:", JSON.stringify(updatePayload, null, 2));
+          
+          if (!routeId || routeId.trim() === "") {
+            throw new Error(`Invalid route ID. Cannot update route without a valid UUID. Route ID: ${editingRoute.id}, Original ID: ${routeId}`);
+          }
+          
+          const response = await updateRoute(
+            routeId,
             updatePayload
-        );
+          );
         const updatedRoute = convertApiToRouteData(response.data);
         setRoutes(
           routes.map((route) =>
@@ -498,7 +550,20 @@ export const useRoutesData = () => {
 
   const handleDeleteRoute = async (routeId: number) => {
     try {
-      await deleteRoute(routeId.toString());
+      // Find the route to get the original UUID
+      const routeToDelete = routes.find((route) => route.id === routeId);
+      if (!routeToDelete) {
+        throw new Error("Route not found");
+      }
+      
+      // Use the original UUID from API, not the numeric ID
+      const originalRouteId = routeToDelete._originalRouteId;
+      
+      if (!originalRouteId || originalRouteId.trim() === "") {
+        throw new Error(`Invalid route ID. Cannot delete route without a valid UUID. Route ID: ${routeId}, Original ID: ${originalRouteId}`);
+      }
+      
+      await deleteRoute(originalRouteId);
       setRoutes(routes.filter((route) => route.id !== routeId));
       toast({
         title: "Success",
