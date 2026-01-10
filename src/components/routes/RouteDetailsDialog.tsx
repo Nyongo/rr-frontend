@@ -227,57 +227,57 @@ const RouteDetailsDialog = ({ route, isOpen, onClose }: RouteDetailsDialogProps)
             {route.students && route.students.length > 0 ? (
               <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto pr-2">
                 {route.students.map((student, index) => (
-                  <div key={student.id} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-400 w-6">
+                  <div key={student.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0 w-full">
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                        <span className="text-xs sm:text-sm font-medium text-gray-400 w-4 sm:w-6">
                           {index + 1}.
                         </span>
-                        <Avatar className="w-12 h-12">
+                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
                           <AvatarImage src={student.photo} />
                           <AvatarFallback className="bg-gray-200 text-gray-400">
-                            <User className="w-6 h-6" />
+                            <User className="w-5 h-5 sm:w-6 sm:h-6" />
                           </AvatarFallback>
                         </Avatar>
                       </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                        <h5 className="font-semibold text-gray-800 text-lg">{student.studentName}</h5>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <h5 className="font-semibold text-gray-800 text-base sm:text-lg truncate">{student.studentName}</h5>
                           {student.riderType && (
-                            <Badge className={
+                            <Badge className={`text-xs ${
                               student.riderType === "daily" 
                                 ? "bg-blue-100 text-blue-800" 
                                 : "bg-yellow-100 text-yellow-800"
-                            }>
+                            }`}>
                               {student.riderType === "daily" ? "Daily" : "Occasional"}
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center space-x-6 mt-1 text-sm text-gray-600">
-                          <span>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 mt-1 text-xs sm:text-sm text-gray-600">
+                          <span className="truncate">
                             <span className="font-medium">Admission:</span> {student.admissionNumber}
                           </span>
                           {(student.age > 0 || student.dateOfBirth) && (
-                          <span>
+                          <span className="whitespace-nowrap">
                               <span className="font-medium">Age:</span> {student.age > 0 ? `${student.age} ${student.age === 1 ? 'year' : 'years'}` : 'N/A'}
                           </span>
                           )}
                           {student.gender && (
-                          <span>
+                          <span className="whitespace-nowrap">
                             <span className="font-medium">Gender:</span> {student.gender}
                           </span>
                           )}
                         </div>
                         {(student.parentName || student.parentPhone) && (
-                          <div className="flex items-center space-x-6 mt-2 text-xs text-gray-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 mt-2 text-xs text-gray-500">
                             {student.parentName && (
-                              <span>
+                              <span className="truncate">
                                 <span className="font-medium">Parent:</span> {student.parentName}
                               </span>
                             )}
                             {student.parentPhone && (
-                              <span>
+                              <span className="truncate sm:whitespace-nowrap">
                                 <span className="font-medium">Phone:</span> {student.parentPhone}
                               </span>
                             )}

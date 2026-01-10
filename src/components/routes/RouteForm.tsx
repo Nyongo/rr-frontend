@@ -233,12 +233,15 @@ const RouteForm = ({ onSubmit, onCancel, editingRoute }: RouteFormProps) => {
   // Load existing students when editing a route
   useEffect(() => {
     const loadRouteStudents = async () => {
-      if (editingRoute && typeof editingRoute.id === "string") {
+      // Use the original UUID from API, not the numeric ID
+      const routeId = editingRoute?._originalRouteId;
+      if (editingRoute && routeId) {
         setLoadingRouteStudents(true);
         try {
           // Load all students (both daily and occasional) initially
           // The RouteStudentsSection will handle filtered loading by tab
-          const response = await getRouteStudents(editingRoute.id);
+          console.log("🔄 Loading route students with routeId:", routeId);
+          const response = await getRouteStudents(routeId);
           if (response.success) {
             const convertedStudents = response.data.map(
               convertRouteStudentDetailToStudentInRoute
@@ -392,21 +395,22 @@ const RouteForm = ({ onSubmit, onCancel, editingRoute }: RouteFormProps) => {
       <Card className="border-0 shadow-lg">
         <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="outline" size="sm" onClick={onCancel} className="flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={onCancel} className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-auto sm:px-3">
               <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Back</span>
             </Button>
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-lg sm:text-xl">
+              <CardTitle className="text-lg sm:text-xl font-bold">
                 {editingRoute ? "Edit Route" : "Create New Route"}
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Set up route details and add students
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <RouteBasicInfoForm
               formData={formData}
               onFormDataChange={setFormData}
@@ -431,12 +435,13 @@ const RouteForm = ({ onSubmit, onCancel, editingRoute }: RouteFormProps) => {
               onFormDataChange={setFormData}
               mockStudents={availableStudents}
               routeId={(() => {
-                const routeId = editingRoute?.id
-                  ? editingRoute.id.toString() // Convert number ID to string for API
-                  : undefined;
+                // Use the original UUID from API, not the numeric ID
+                const routeId = editingRoute?._originalRouteId || undefined;
                 console.log(
-                  "🎯 Passing routeId to RouteStudentsSection:",
-                  routeId
+                  "🎯 Passing routeId (UUID) to RouteStudentsSection:",
+                  routeId,
+                  "from editingRoute:",
+                  editingRoute
                 );
                 return routeId;
               })()}

@@ -545,16 +545,16 @@ const RouteStudentsSection = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Users className="w-5 h-5" />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+          <Users className="w-4 h-4 sm:w-5 sm:h-5" />
           Students on Route
         </h3>
         <Button
           type="button"
           onClick={() => setIsDialogOpen(true)}
           variant="outline"
-          className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+          className="w-full sm:w-auto bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
           disabled={isAddingStudents || isRemovingStudent}
         >
           <UserPlus className="w-4 h-4 mr-2" />
@@ -567,16 +567,18 @@ const RouteStudentsSection = ({
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="daily" className="flex items-center gap-2">
-            Daily Riders{" "}
-            <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+        <TabsList className="grid w-full grid-cols-2 mb-4 h-auto">
+          <TabsTrigger value="daily" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-1.5 px-2 sm:px-3">
+            <span className="hidden sm:inline">Daily Riders</span>
+            <span className="sm:hidden">Daily</span>
+            <span className="bg-gray-200 text-gray-700 px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium">
               {routeId ? dailyRidersFromAPI.length : dailyRiders.length}
             </span>
           </TabsTrigger>
-          <TabsTrigger value="occasional" className="flex items-center gap-2">
-            Occasional Riders{" "}
-            <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+          <TabsTrigger value="occasional" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-1.5 px-2 sm:px-3">
+            <span className="hidden sm:inline">Occasional Riders</span>
+            <span className="sm:hidden">Occasional</span>
+            <span className="bg-gray-200 text-gray-700 px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium">
               {routeId
                 ? occasionalRidersFromAPI.length
                 : occasionalRiders.length}

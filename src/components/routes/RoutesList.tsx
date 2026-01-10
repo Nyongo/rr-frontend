@@ -40,7 +40,7 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {routes.map((route) => (
         <Card 
           key={route.id} 
@@ -50,49 +50,53 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
           onClick={() => onCardClick(route)}
         >
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <CardTitle className={`text-xl ${route.status === "inactive" ? "text-gray-500" : "text-gray-800"}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-start gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className={`text-lg sm:text-xl truncate ${route.status === "inactive" ? "text-gray-500" : "text-gray-800"}`}>
                   {route.routeName}
                 </CardTitle>
-                <CardDescription className={route.status === "inactive" ? "text-gray-400" : "text-gray-600"}>
+                <CardDescription className={`truncate ${route.status === "inactive" ? "text-gray-400" : "text-gray-600"}`}>
                   {route.schoolName}
                 </CardDescription>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getTripTypeColor(route.tripType)}`}>
+                <div className="flex items-center flex-wrap gap-2 mt-2">
+                  <span className={`inline-flex items-center rounded-full px-2 sm:px-2.5 py-0.5 text-xs font-semibold ${getTripTypeColor(route.tripType)}`}>
                     {route.tripType}
                   </span>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(route.status)}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 sm:px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(route.status)}`}>
                     {route.status}
                   </span>
                 </div>
               </div>
-              <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex space-x-1 sm:space-x-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => onEdit(route)}
                   title="Edit route"
+                  className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                 >
-                  <Edit className="w-4 h-4" />
+                  <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-1">Edit</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => onDuplicate(route)}
                   title="Duplicate route"
-                  className="text-blue-600 hover:bg-blue-50"
+                  className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3 text-blue-600 hover:bg-blue-50"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-1">Copy</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="text-red-600 hover:bg-red-50"
+                  className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:bg-red-50"
                   onClick={() => onDelete(route.id)}
                   title="Delete route"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-1">Delete</span>
                 </Button>
               </div>
             </div>
@@ -152,7 +156,7 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
 
             {/* Bus Information */}
             {route.bus && (
-              <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg ${
+              <div className={`flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg ${
                 route.status === "inactive" 
                   ? "bg-gray-100" 
                   : "bg-purple-50"
@@ -175,7 +179,7 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
 
             {/* Driver Information */}
             {route.driver && (
-              <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg ${
+              <div className={`flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg ${
                 route.status === "inactive" 
                   ? "bg-gray-100" 
                   : "bg-orange-50"
@@ -198,7 +202,7 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
 
             {/* Minder Information */}
             {route.minder && (
-              <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg ${
+              <div className={`flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg ${
                 route.status === "inactive" 
                   ? "bg-gray-100" 
                   : "bg-teal-50"
