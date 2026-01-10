@@ -10,6 +10,7 @@ import { getTrips } from "@/services/tripsApi";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { getStudentsBySchoolId } from "@/services/studentsApi";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState<any[]>([]);
   const [tripsLoading, setTripsLoading] = useState(true);
+  const [totalStudentsCount, setTotalStudentsCount] = useState<number>(0);
+  const [studentsLoadingCount, setStudentsLoadingCount] = useState(false);
 
   const isCustomer = user?.role.name.toLowerCase() === "customer";
 
@@ -46,11 +49,42 @@ const Dashboard = () => {
   const customerRoutes = isCustomer ? routes : routes;
   const customerTrips = isCustomer ? trips : [];
 
-  // Calculate stats for customer
-  const totalStudents = customerSchools.reduce((sum, school) => {
-    // In production, fetch actual student count per school
-    return sum + 0; // Placeholder
-  }, 0);
+  // Fetch total students count for customer
+  useEffect(() => {
+    if (isCustomer && customerSchools.length > 0) {
+      const fetchStudentsCount = async () => {
+        try {
+          setStudentsLoadingCount(true);
+          let totalCount = 0;
+          
+          // Fetch students count for each school using pagination info
+          for (const school of customerSchools) {
+            try {
+              // Fetch first page to get pagination info with totalItems
+              const response = await getStudentsBySchoolId(school.id, 1, 1);
+              if (response && response.pagination) {
+                totalCount += response.pagination.totalItems || 0;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch students count for school ${school.id}:`, error);
+            }
+          }
+          
+          setTotalStudentsCount(totalCount);
+        } catch (error) {
+          console.error("Failed to fetch students count:", error);
+          setTotalStudentsCount(0);
+        } finally {
+          setStudentsLoadingCount(false);
+        }
+      };
+      
+      fetchStudentsCount();
+    } else if (!isCustomer) {
+      // Reset count when not a customer
+      setTotalStudentsCount(0);
+    }
+  }, [isCustomer, customerSchools]);
 
   const activeTrips = customerTrips.filter(
     (trip) => trip.status === "SCHEDULED" || trip.status === "IN_PROGRESS"
@@ -101,6 +135,13 @@ const Dashboard = () => {
       color: "from-blue-500 to-cyan-500",
     },
     {
+      title: "Total Students",
+      value: studentsLoadingCount ? "..." : totalStudentsCount.toLocaleString(),
+      description: "Students across all schools",
+      icon: GraduationCap,
+      color: "from-purple-500 to-pink-500",
+    },
+    {
       title: "Active Routes",
       value: customerRoutes.filter((r) => r.status === "active").length.toString(),
       description: "Active bus routes",
@@ -112,14 +153,7 @@ const Dashboard = () => {
       value: activeTrips.toString(),
       description: "Trips scheduled today",
       icon: Calendar,
-      color: "from-purple-500 to-pink-500",
-    },
-    {
-      title: "Completed Trips",
-      value: completedTrips.toString(),
-      description: "Trips completed",
-      icon: TrendingUp,
-      color: "from-orange-500 to-red-500",
+      color: "from-indigo-500 to-blue-500",
     },
   ];
 
