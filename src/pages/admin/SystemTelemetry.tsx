@@ -281,7 +281,7 @@ const SystemTelemetry = () => {
       endTime: format(new Date(failure.trip.endTime), "h:mm a"),
       status: failure.trip.status,
       driver: failure.trip.driver.name,
-      busRegistration: failure.trip.bus.registrationNumber,
+      busRegistration: failure.trip.bus?.registrationNumber || "Bus not assigned",
     },
     failureTime: new Date(failure.failureTime),
     failureReason: failure.failureReason,

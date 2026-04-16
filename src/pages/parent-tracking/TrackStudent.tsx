@@ -173,10 +173,12 @@ const TrackStudent = () => {
             
             // Map the response to our existing state structures
             // Convert TrackingTrip to Trip format
+            const busData = response.data.trip.bus;
+
             const tripData: Trip = {
               id: response.data.trip.id,
               routeId: response.data.trip.route.id,
-              busId: response.data.trip.bus.id,
+              busId: busData?.id || "",
               driverId: response.data.trip.driver.id,
               minderId: null,
               tripDate: response.data.trip.tripDate,
@@ -200,12 +202,19 @@ const TrackStudent = () => {
                 name: response.data.trip.route.name,
                 tripType: response.data.trip.route.tripType,
               },
-              bus: {
-                id: response.data.trip.bus.id,
-                registrationNumber: response.data.trip.bus.registrationNumber,
-                make: response.data.trip.bus.make,
-                model: response.data.trip.bus.model,
-              },
+              bus: busData
+                ? {
+                    id: busData.id,
+                    registrationNumber: busData.registrationNumber,
+                    make: busData.make,
+                    model: busData.model,
+                  }
+                : {
+                    id: "",
+                    registrationNumber: "Bus not assigned",
+                    make: "",
+                    model: "",
+                  },
               driver: {
                 id: response.data.trip.driver.id,
                 name: response.data.trip.driver.name,

@@ -145,12 +145,18 @@ const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) =>
                 <Bus className="w-5 h-5 text-purple-600" />
                 <h4 className="font-semibold text-gray-800">Bus</h4>
               </div>
-              <p className="text-sm font-medium text-gray-800">
-                {trip.bus.registrationNumber}
-              </p>
-              <p className="text-xs text-gray-600">
-                {trip.bus.make} {trip.bus.model}
-              </p>
+              {trip.bus ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">
+                    {trip.bus.registrationNumber}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {trip.bus.make} {trip.bus.model}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Bus not assigned</p>
+              )}
             </div>
 
             {/* Driver */}

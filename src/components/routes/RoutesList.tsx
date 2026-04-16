@@ -166,12 +166,12 @@ const RoutesList = ({ routes, onEdit, onDuplicate, onDelete, onCardClick }: Rout
                   <div className={`text-xs sm:text-sm font-medium truncate ${
                     route.status === "inactive" ? "text-gray-500" : "text-purple-800"
                   }`}>
-                    {route.bus.registrationNumber}
+                    {route.bus?.registrationNumber || "Bus not assigned"}
                   </div>
                   <div className={`text-xs truncate ${
                     route.status === "inactive" ? "text-gray-400" : "text-purple-600"
                   }`}>
-                    {route.bus.make} {route.bus.model}
+                    {route.bus ? `${route.bus.make} ${route.bus.model}` : ""}
                   </div>
                 </div>
               </div>

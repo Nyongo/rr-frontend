@@ -113,6 +113,57 @@ export interface GetTripsResponse {
   };
 }
 
+export interface TrackingLocation {
+  id: number;
+  tripId: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  speed: number | null;
+  heading: number | null;
+  accuracy: number | null;
+}
+
+export interface TrackingResponse {
+  success: boolean;
+  data: {
+    student: {
+      id: string;
+      name: string;
+      admissionNumber: string;
+    };
+    trip: {
+      id: string;
+      tripDate: string;
+      status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+      route: {
+        id: string;
+        name: string;
+        tripType: string;
+      };
+      bus: {
+        id: string;
+        registrationNumber: string;
+        make: string;
+        model: string;
+      };
+      driver: {
+        id: string;
+        name: string;
+        phoneNumber: string;
+      };
+    };
+    pickupStatus: "NOT_PICKED_UP" | "PICKED_UP";
+    dropoffStatus: "NOT_DROPPED_OFF" | "DROPPED_OFF";
+    actualPickupTime: string | null;
+    actualDropoffTime: string | null;
+    pickupLocation: string | null;
+    dropoffLocation: string | null;
+    currentLocation: TrackingLocation | null;
+    locationHistory: TrackingLocation[];
+  };
+}
+
 export const createTrip = async (
   tripData: CreateTripRequest
 ): Promise<CreateTripResponse> => {
@@ -176,7 +227,9 @@ export const getTrips = async (
   return result;
 };
 
-export const getTrip = async (tripId: string): Promise<{ success: boolean; data: Trip }> => {
+export const getTrip = async (
+  tripId: string
+): Promise<{ success: boolean; data: Trip }> => {
   const response = await fetch(`${API_BASE_URL}/trips/${tripId}`);
 
   if (!response.ok) {
@@ -235,7 +288,9 @@ export const deleteTrip = async (tripId: string): Promise<void> => {
   }
 };
 
-export const endTrip = async (tripId: string): Promise<{ success: boolean; data: Trip }> => {
+export const endTrip = async (
+  tripId: string
+): Promise<{ success: boolean; data: Trip }> => {
   console.log("🏁 Ending trip:", tripId);
 
   const response = await fetch(`${API_BASE_URL}/trips/${tripId}`, {
@@ -297,115 +352,16 @@ export const getTripsByStudent = async (
   return result;
 };
 
-
-
-// Tracking response interfaces
-export interface TrackingStudent {
-  id: string;
-  name: string;
-  admissionNumber: string;
-}
-
-export interface TrackingTrip {
-  id: string;
-  tripDate: string;
-  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  route: {
-    id: string;
-    name: string;
-    tripType: string;
-  };
-  bus: {
-    id: string;
-    registrationNumber: string;
-    make: string;
-    model: string;
-  };
-  driver: {
-    id: string;
-    name: string;
-    phoneNumber: string;
-  };
-}
-
-export interface TrackingLocation {
-  id: number;
-  tripId: string;
-  latitude: number;
-  longitude: number;
-  timestamp: string;
-  speed: number;
-  heading: number;
-  accuracy: number;
-}
-
-export interface TrackingResponse {
-  success: boolean;
-  data: {
-    student: TrackingStudent;
-    trip: TrackingTrip;
-    pickupStatus: "NOT_PICKED_UP" | "PICKED_UP";
-    dropoffStatus: "NOT_DROPPED_OFF" | "DROPPED_OFF";
-    actualPickupTime: string | null;
-    actualDropoffTime: string | null;
-    pickupLocation: string | null;
-    dropoffLocation: string | null;
-    currentLocation: TrackingLocation | null;
-    locationHistory: TrackingLocation[];
-  };
-}
-
-// Get trip and student information by tracking token (for parent tracking)
+// Public tracking endpoint for parents
 export const getTripByTrackingToken = async (
   trackingToken: string
 ): Promise<TrackingResponse> => {
-  const response = await fetch(`${API_BASE_URL}/track/${trackingToken}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/track/${encodeURIComponent(trackingToken)}`
+  );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || errorData.response?.message || "Failed to fetch tracking information"
-    );
-  }
-
-  const result = await response.json();
-
-  if (result.response?.code && result.response.code !== 200) {
-    throw new Error(result.response.message || "API request failed");
-  }
-
-  return result;
-};
-
-// Get real-time location updates by tracking token
-export const getTrackingLocation = async (
-  trackingToken: string
-): Promise<{
-  success: boolean;
-  data: {
-    currentLocation: TrackingLocation | null;
-    locationHistory: TrackingLocation[];
-    pickupStatus: "NOT_PICKED_UP" | "PICKED_UP";
-    dropoffStatus: "NOT_DROPPED_OFF" | "DROPPED_OFF";
-  };
-}> => {
-  const response = await fetch(`${API_BASE_URL}/track/${trackingToken}/location`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || errorData.response?.message || "Failed to fetch location information"
-    );
+    throw new Error("Failed to fetch tracking information");
   }
 
   const result = await response.json();

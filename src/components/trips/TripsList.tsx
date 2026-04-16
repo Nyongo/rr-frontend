@@ -120,13 +120,19 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
     }
   };
 
-  const filteredTrips = trips.filter(
-    (trip) =>
-      trip.route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.bus.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (trip.minder?.name.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-  );
+  const filteredTrips = trips.filter((trip) => {
+    const searchLower = searchTerm.toLowerCase();
+    const busReg = trip.bus?.registrationNumber?.toLowerCase() || "";
+    const driverName = trip.driver?.name?.toLowerCase() || "";
+    const minderName = trip.minder?.name?.toLowerCase() || "";
+
+    return (
+      trip.route.name.toLowerCase().includes(searchLower) ||
+      busReg.includes(searchLower) ||
+      driverName.includes(searchLower) ||
+      minderName.includes(searchLower)
+    );
+  });
 
   if (loading) {
     return (
@@ -206,7 +212,9 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                     <div className="flex items-center gap-2 text-sm">
                       <Bus className="w-4 h-4 text-purple-600" />
                       <span className="text-gray-700">
-                        {trip.bus.registrationNumber} - {trip.bus.make} {trip.bus.model}
+                        {trip.bus
+                          ? `${trip.bus.registrationNumber} - ${trip.bus.make} ${trip.bus.model}`
+                          : "Bus not assigned"}
                       </span>
                     </div>
 
