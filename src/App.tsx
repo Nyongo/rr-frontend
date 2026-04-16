@@ -72,7 +72,12 @@ const ProtectedRoute = ({
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  const userRole = user.role.name.toLowerCase();
+  const userRole = user.role?.name?.toLowerCase() || "";
+
+  if (!userRole) {
+    // User has no valid role; send them to a safe default
+    return <Navigate to="/dashboard" replace />;
+  }
   if (!allowedRoles.includes(userRole)) {
     // User doesn't have the required role
     // Redirect to appropriate dashboard based on role
