@@ -221,7 +221,9 @@ const TripsList = ({ onEditTrip, refreshTrigger }: TripsListProps) => {
                     {/* Driver */}
                     <div className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-orange-600" />
-                      <span className="text-gray-700">{trip.driver.name}</span>
+                      <span className="text-gray-700">
+                        {trip.driver ? trip.driver.name : "No driver assigned"}
+                      </span>
                     </div>
 
                     {/* Minder */}

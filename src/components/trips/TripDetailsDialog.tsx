@@ -165,8 +165,14 @@ const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) =>
                 <User className="w-5 h-5 text-orange-600" />
                 <h4 className="font-semibold text-gray-800">Driver</h4>
               </div>
-              <p className="text-sm font-medium text-gray-800">{trip.driver.name}</p>
-              <p className="text-xs text-gray-600">{trip.driver.phoneNumber}</p>
+              {trip.driver ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{trip.driver.name}</p>
+                  <p className="text-xs text-gray-600">{trip.driver.phoneNumber}</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No driver assigned</p>
+              )}
             </div>
 
             {/* Minder */}
