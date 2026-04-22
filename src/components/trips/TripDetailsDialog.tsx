@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ import {
   Users,
 } from "lucide-react";
 import TripLocationTracker from "./TripLocationTracker";
+import TripRoutePreviewMap from "./TripRoutePreviewMap";
+import { buildTripRouteWaypoints } from "./tripRouteWaypoints";
 
 interface TripDetailsDialogProps {
   trip: Trip | null;
@@ -28,6 +31,11 @@ interface TripDetailsDialogProps {
 }
 
 const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) => {
+  const routePreviewWaypoints = useMemo(
+    () => (trip ? buildTripRouteWaypoints(trip) : []),
+    [trip]
+  );
+
   if (!trip) return null;
 
   const getStatusColor = (status: string) => {
@@ -191,6 +199,12 @@ const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) =>
               )}
             </div>
           </div>
+
+          {/* Planned route preview (Directions API) when we have 2+ GPS stops */}
+          {(trip.status === "SCHEDULED" || trip.status === "IN_PROGRESS") &&
+            routePreviewWaypoints.length >= 2 && (
+              <TripRoutePreviewMap waypoints={routePreviewWaypoints} />
+            )}
 
           {/* Real-time Location Tracking */}
           <TripLocationTracker tripId={trip.id} tripStatus={trip.status} />

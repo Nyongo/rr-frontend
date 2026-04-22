@@ -111,7 +111,7 @@ const AddressForm = ({ onAddAddress, addresses }: AddressFormProps) => {
     console.log("🟢 [STEP 4C] NO script found. Creating NEW script...");
     const script = document.createElement("script");
     const apiKey = config.GOOGLE_MAPS_API_KEY;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
     script.async = true;
     script.defer = true;
 

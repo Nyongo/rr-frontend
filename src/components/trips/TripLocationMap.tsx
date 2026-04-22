@@ -3,7 +3,8 @@ import { MapPin, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TripLocation } from "@/services/tripLocationApi";
-import { config } from "@/lib/config";
+import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
+import { snapPathToRoads, type LatLngPoint } from "@/services/googleRoadsApi";
 
 // Declare Google Maps types
 declare global {
@@ -62,71 +63,27 @@ const TripLocationMap = ({
   const markerRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const startMarkerRef = useRef<any>(null);
-  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const mainInfoWindowRef = useRef<any>(null);
+  const startInfoWindowRef = useRef<any>(null);
+  const { isLoaded: isGoogleMapsLoaded, error: scriptLoadError } =
+    useGoogleMapsScript();
   const [isLoading, setIsLoading] = useState(true);
   const [showStreetView, setShowStreetView] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+  const [startAddress, setStartAddress] = useState<string | null>(null);
 
   // Validate and normalize coordinates
   const validatedCoords = validateCoordinates(latitude, longitude);
   const validLat = validatedCoords.lat;
   const validLng = validatedCoords.lng;
 
-  // Load Google Maps API
   useEffect(() => {
-    // Check if already loaded
-    if (window.google?.maps) {
-      setIsGoogleMapsLoaded(true);
-      return;
-    }
-
-    // Check if script already exists
-    const existingScript = document.querySelector(
-      'script[src*="maps.googleapis.com"]'
-    );
-    if (existingScript) {
-      // Wait for it to load
-      const checkInterval = setInterval(() => {
-        if (window.google?.maps) {
-          setIsGoogleMapsLoaded(true);
-          clearInterval(checkInterval);
-        }
-      }, 100);
-      return () => clearInterval(checkInterval);
-    }
-
-    // Create new script
-    const script = document.createElement("script");
-    const apiKey = config.GOOGLE_MAPS_API_KEY;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
-      if (window.google?.maps) {
-        setIsGoogleMapsLoaded(true);
-      }
-    };
-
-    script.onerror = () => {
-      setMapError("Failed to load Google Maps");
+    if (scriptLoadError) {
+      setMapError(scriptLoadError);
       setIsLoading(false);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      // Cleanup: remove script if component unmounts before it loads
-      if (!window.google?.maps) {
-        const scriptToRemove = document.querySelector(
-          'script[src*="maps.googleapis.com"]'
-        );
-        if (scriptToRemove && scriptToRemove === script) {
-          scriptToRemove.remove();
-        }
-      }
-    };
-  }, []);
+    }
+  }, [scriptLoadError]);
 
   // Initialize map when Google Maps is loaded
   useEffect(() => {
@@ -176,23 +133,43 @@ const TripLocationMap = ({
 
       markerRef.current = marker;
 
-      // Add info window with location details
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 8px;">
+      const buildMainInfoHtml = (address: string | null) => `
+          <div style="padding: 8px; max-width: 280px;">
             <div style="font-weight: bold; margin-bottom: 4px;">Trip Location</div>
-            <div style="font-size: 12px; color: #666;">
+            ${
+              address
+                ? `<div style="font-size: 13px; color: #111; margin-bottom: 6px;">${address}</div>`
+                : `<div style="font-size: 12px; color: #888;">Loading address…</div>`
+            }
+            <div style="font-size: 11px; color: #666;">
               ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
               ${speed !== undefined ? `<br>Speed: ${speed.toFixed(1)} km/h` : ""}
               ${heading !== undefined ? `<br>Heading: ${heading}°` : ""}
             </div>
           </div>
-        `,
+        `;
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: buildMainInfoHtml(null),
       });
+      mainInfoWindowRef.current = infoWindow;
 
       marker.addListener("click", () => {
         infoWindow.open(map, marker);
       });
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode(
+        { location: { lat: validLat, lng: validLng } },
+        (results: { formatted_address?: string }[] | null, status: string) => {
+          const addr =
+            status === "OK" && results?.[0]?.formatted_address
+              ? results[0].formatted_address
+              : null;
+          setCurrentAddress(addr);
+          infoWindow.setContent(buildMainInfoHtml(addr));
+        }
+      );
 
       // Add start marker (first point) - done here to ensure map is ready
       if (locationHistory && locationHistory.length > 0 && !startMarkerRef.current) {
@@ -218,28 +195,53 @@ const TripLocationMap = ({
           zIndex: 10,
         });
 
-        const startInfoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div style="padding: 8px;">
+        const buildStartInfoHtml = (address: string | null) => `
+            <div style="padding: 8px; max-width: 280px;">
               <div style="font-weight: bold; margin-bottom: 4px; color: #34A853;">Trip Start</div>
-              <div style="font-size: 12px; color: #666;">
+              ${
+                address
+                  ? `<div style="font-size: 13px; color: #111; margin-bottom: 6px;">${address}</div>`
+                  : `<div style="font-size: 12px; color: #888;">Loading address…</div>`
+              }
+              <div style="font-size: 11px; color: #666;">
                 ${startLocation.latitude.toFixed(6)}, ${startLocation.longitude.toFixed(6)}
                 <br>Time: ${new Date(startLocation.timestamp).toLocaleTimeString()}
               </div>
             </div>
-          `,
+          `;
+
+        const startInfoWindow = new window.google.maps.InfoWindow({
+          content: buildStartInfoHtml(null),
         });
+        startInfoWindowRef.current = startInfoWindow;
 
         startMarker.addListener("click", () => {
           startInfoWindow.open(map, startMarker);
         });
 
+        geocoder.geocode(
+          {
+            location: {
+              lat: startLocation.latitude,
+              lng: startLocation.longitude,
+            },
+          },
+          (results: { formatted_address?: string }[] | null, status: string) => {
+            const addr =
+              status === "OK" && results?.[0]?.formatted_address
+                ? results[0].formatted_address
+                : null;
+            setStartAddress(addr);
+            startInfoWindow.setContent(buildStartInfoHtml(addr));
+          }
+        );
+
         startMarkerRef.current = startMarker;
       }
 
-      // Draw route path if location history exists
+      // Draw route path if location history exists (roads-snapped when API allows)
       if (locationHistory && locationHistory.length > 0) {
-        drawRoutePath(map, locationHistory, latitude, longitude);
+        void drawRoutePath(map, locationHistory, latitude, longitude);
       }
 
       setIsLoading(false);
@@ -300,8 +302,8 @@ const TripLocationMap = ({
     }
   }, [isGoogleMapsLoaded, showStreetView, latitude, longitude, heading]);
 
-  // Function to draw route path using Directions Service for road-following route
-  const drawRoutePath = (
+  // Recorded GPS path: snap to roads when possible (Roads API), else raw polyline
+  const drawRoutePath = async (
     map: any,
     history: TripLocation[],
     currentLat: number,
@@ -309,52 +311,47 @@ const TripLocationMap = ({
   ) => {
     if (!window.google?.maps || !map) return;
 
-    // Remove existing polyline if it exists
     if (polylineRef.current) {
       polylineRef.current.setMap(null);
       polylineRef.current = null;
     }
 
-    // Create path from history + current location
-    const allPoints: Array<{ lat: number; lng: number }> = [];
-    
-    // Add all historical locations with validation
+    const allPoints: LatLngPoint[] = [];
+
     history.forEach((location) => {
       const validated = validateCoordinates(location.latitude, location.longitude);
       if (validated.valid) {
         allPoints.push({ lat: validated.lat, lng: validated.lng });
       } else {
-        console.warn('Skipping invalid location in history:', location);
+        console.warn("Skipping invalid location in history:", location);
       }
     });
 
-      // Add current location if it's different from the last history point
-      const lastHistoryPoint = history[history.length - 1];
-      if (
-        !lastHistoryPoint ||
-        Math.abs(lastHistoryPoint.latitude - currentLat) > 0.0001 ||
-        Math.abs(lastHistoryPoint.longitude - currentLng) > 0.0001
-      ) {
-        // Validate current location coordinates
-        const validated = validateCoordinates(currentLat, currentLng);
-        if (validated.valid) {
-          allPoints.push({ lat: validated.lat, lng: validated.lng });
-        }
+    const lastHistoryPoint = history[history.length - 1];
+    if (
+      !lastHistoryPoint ||
+      Math.abs(lastHistoryPoint.latitude - currentLat) > 0.0001 ||
+      Math.abs(lastHistoryPoint.longitude - currentLng) > 0.0001
+    ) {
+      const validated = validateCoordinates(currentLat, currentLng);
+      if (validated.valid) {
+        allPoints.push({ lat: validated.lat, lng: validated.lng });
       }
+    }
 
-    // Only draw if we have at least 2 points
     if (allPoints.length < 2) return;
 
-    // Always use polyline to show ACTUAL path taken (better for tracking/auditing)
-    // Since GPS points are logged every ~2 minutes, we have enough points for a smooth path
-    // This shows where the bus actually went, not the optimal route
-    drawSmoothPolyline(map, allPoints, true); // Fit bounds on initial draw
+    const snapped = await snapPathToRoads(allPoints);
+    const pathToDraw =
+      snapped && snapped.length >= 2 ? snapped : allPoints;
+
+    drawSmoothPolyline(map, pathToDraw, true);
   };
 
   // Draw smooth polyline with Google Maps-like styling
   const drawSmoothPolyline = (
     map: any,
-    points: Array<{ lat: number; lng: number }>,
+    points: LatLngPoint[],
     shouldFitBounds: boolean = true
   ) => {
     const polyline = new window.google.maps.Polyline({
@@ -452,7 +449,7 @@ const TripLocationMap = ({
     
     if (lastHistoryLengthRef.current === 0) {
       // Initial route draw
-      drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
+      void drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
       lastHistoryLengthRef.current = currentLength;
     } else if (currentLength > lastHistoryLengthRef.current) {
       // New points added - extend the polyline smoothly instead of redrawing
@@ -492,7 +489,7 @@ const TripLocationMap = ({
         // This prevents the map from jumping around
       } else {
         // No existing polyline, draw full route
-        drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
+        void drawRoutePath(mapInstanceRef.current, locationHistory, latitude, longitude);
       }
       
       lastHistoryLengthRef.current = currentLength;
@@ -595,9 +592,20 @@ const TripLocationMap = ({
         </div>
       )}
 
-      {/* Coordinates Display */}
-      <div className="text-xs text-gray-600 text-center">
-        Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+      {/* Address + coordinates */}
+      <div className="text-xs text-gray-600 text-center space-y-1">
+        {currentAddress && (
+          <p className="font-medium text-gray-800 leading-snug">{currentAddress}</p>
+        )}
+        {locationHistory.length > 0 && startAddress && (
+          <p className="text-gray-500">
+            <span className="font-medium text-green-700">Start: </span>
+            {startAddress}
+          </p>
+        )}
+        <p>
+          Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+        </p>
       </div>
     </div>
   );

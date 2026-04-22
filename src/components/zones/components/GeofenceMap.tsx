@@ -1,8 +1,8 @@
-
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Plus, Minus } from "lucide-react";
+import { Search, Plus, Minus, MapPin, Loader2 } from "lucide-react";
+import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
 
 interface GeofenceMapProps {
   center: { lat: number; lng: number };
@@ -10,158 +10,204 @@ interface GeofenceMapProps {
   onGeofenceChange: (center: { lat: number; lng: number }, radius: number) => void;
 }
 
-const GeofenceMap = ({ center, radius, onGeofenceChange }: GeofenceMapProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const [zoom, setZoom] = useState(13);
+/**
+ * Google Map + Places search for zone center; draggable marker and circle show geofence.
+ */
+const GeofenceMap = ({
+  center,
+  radius,
+  onGeofenceChange,
+}: GeofenceMapProps) => {
+  const { isLoaded, error } = useGoogleMapsScript();
   const mapRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const circleRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerRef = useRef<any>(null);
+  const radiusRef = useRef(radius);
+  const onChangeRef = useRef(onGeofenceChange);
 
-  // Mock search locations
-  const mockLocations = [
-    { name: "Central Park, NY", lat: 40.7829, lng: -73.9654 },
-    { name: "Times Square, NY", lat: 40.7580, lng: -73.9855 },
-    { name: "Brooklyn Bridge, NY", lat: 40.7061, lng: -73.9969 },
-    { name: "Statue of Liberty, NY", lat: 40.6892, lng: -74.0445 },
-    { name: "Empire State Building, NY", lat: 40.7484, lng: -73.9857 },
-  ];
+  radiusRef.current = radius;
+  onChangeRef.current = onGeofenceChange;
 
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!mapRef.current) return;
-    
-    const rect = mapRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Convert pixel coordinates to lat/lng (simplified calculation)
-    const mapWidth = rect.width;
-    const mapHeight = rect.height;
-    
-    // This is a simplified conversion - in a real implementation you'd use proper map projection
-    const lng = center.lng + ((x - mapWidth / 2) / mapWidth) * (360 / Math.pow(2, zoom));
-    const lat = center.lat - ((y - mapHeight / 2) / mapHeight) * (180 / Math.pow(2, zoom));
-    
-    onGeofenceChange({ lat, lng }, radius);
-  };
+  // Create map, circle, marker once
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current || !window.google?.maps) return;
 
-  const handleSearch = (location: { lat: number; lng: number }) => {
-    onGeofenceChange(location, radius);
-    setSearchQuery("");
-  };
+    const map = new window.google.maps.Map(mapRef.current, {
+      center,
+      zoom: 14,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+    });
+    mapInstanceRef.current = map;
+
+    const circle = new window.google.maps.Circle({
+      center,
+      radius,
+      map,
+      strokeColor: "#3b82f6",
+      strokeOpacity: 0.9,
+      strokeWeight: 2,
+      fillColor: "#3b82f6",
+      fillOpacity: 0.12,
+      clickable: false,
+    });
+    circleRef.current = circle;
+
+    const marker = new window.google.maps.Marker({
+      position: center,
+      map,
+      draggable: true,
+      title: "Geofence center",
+    });
+    markerRef.current = marker;
+
+    marker.addListener("dragend", () => {
+      const pos = marker.getPosition();
+      if (!pos) return;
+      const lat = pos.lat();
+      const lng = pos.lng();
+      circle.setCenter({ lat, lng });
+      onChangeRef.current({ lat, lng }, radiusRef.current);
+    });
+
+    map.addListener("click", (e: { latLng?: { lat: () => number; lng: () => number } | null }) => {
+      if (!e.latLng) return;
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      marker.setPosition({ lat, lng });
+      circle.setCenter({ lat, lng });
+      onChangeRef.current({ lat, lng }, radiusRef.current);
+    });
+
+    return () => {
+      marker.setMap(null);
+      circle.setMap(null);
+      mapInstanceRef.current = null;
+      circleRef.current = null;
+      markerRef.current = null;
+    };
+  }, [isLoaded]);
+
+  // Sync from parent (e.g. after Places search or dialog reset)
+  useEffect(() => {
+    if (!circleRef.current || !markerRef.current || !mapInstanceRef.current)
+      return;
+    circleRef.current.setCenter(center);
+    circleRef.current.setRadius(radius);
+    markerRef.current.setPosition(center);
+    mapInstanceRef.current.panTo(center);
+  }, [center.lat, center.lng, radius]);
+
+  // Places Autocomplete (search by name)
+  useEffect(() => {
+    if (!isLoaded || !searchInputRef.current || !window.google.maps?.places)
+      return;
+
+    const ac = new window.google.maps.places.Autocomplete(
+      searchInputRef.current,
+      { fields: ["geometry", "formatted_address", "name"] }
+    );
+
+    const listener = ac.addListener("place_changed", () => {
+      const place = ac.getPlace();
+      const loc = place.geometry?.location;
+      if (!loc) return;
+      const lat = loc.lat();
+      const lng = loc.lng();
+      if (circleRef.current && markerRef.current && mapInstanceRef.current) {
+        circleRef.current.setCenter({ lat, lng });
+        markerRef.current.setPosition({ lat, lng });
+        mapInstanceRef.current.panTo({ lat, lng });
+        mapInstanceRef.current.setZoom(15);
+      }
+      onChangeRef.current({ lat, lng }, radiusRef.current);
+    });
+
+    return () => {
+      window.google.maps.event.removeListener(listener);
+    };
+  }, [isLoaded]);
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 1, 18));
+    const z = mapInstanceRef.current?.getZoom() ?? 14;
+    mapInstanceRef.current?.setZoom(Math.min(z + 1, 20));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 1, 1));
+    const z = mapInstanceRef.current?.getZoom() ?? 14;
+    mapInstanceRef.current?.setZoom(Math.max(z - 1, 3));
   };
 
-  const filteredLocations = mockLocations.filter(location =>
-    location.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (error) {
+    return (
+      <p className="text-sm text-red-600 p-4">
+        Map could not load ({error}). Check VITE_GOOGLE_MAPS_API_KEY and enabled APIs.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
         <Input
-          placeholder="Search for a location..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          ref={searchInputRef}
+          placeholder="Search for a place (Places API)…"
           className="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
+          type="text"
+          autoComplete="off"
         />
-        
-        {/* Search Results */}
-        {searchQuery && filteredLocations.length > 0 && (
-          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1">
-            {filteredLocations.map((location, index) => (
-              <button
-                key={index}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2"
-                onClick={() => handleSearch(location)}
-              >
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <span className="text-sm">{location.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Map Container */}
-      <div className="relative">
+      <div className="relative rounded-lg border border-gray-300 overflow-hidden">
         <div
           ref={mapRef}
-          className="w-full h-80 bg-gradient-to-br from-green-100 to-blue-100 border border-gray-300 rounded-lg cursor-crosshair relative overflow-hidden"
-          onClick={handleMapClick}
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '20px 20px',
-          }}
-        >
-          {/* Center Pin */}
-          <div
-            className="absolute transform -translate-x-1/2 -translate-y-full z-10"
-            style={{
-              left: '50%',
-              top: '50%',
-            }}
+          className="w-full h-80 bg-gray-100"
+        />
+        {!isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100/90 z-20">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        )}
+
+        <div className="absolute top-4 right-4 flex flex-col space-y-2 z-10">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleZoomIn}
+            className="bg-white shadow-sm"
           >
-            <MapPin className="w-6 h-6 text-red-600 drop-shadow-sm" />
-          </div>
-
-          {/* Geofence Circle */}
-          <div
-            className="absolute border-2 border-blue-500 border-dashed rounded-full bg-blue-500 bg-opacity-10"
-            style={{
-              left: '50%',
-              top: '50%',
-              width: `${Math.min(radius / 5, 150)}px`,
-              height: `${Math.min(radius / 5, 150)}px`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          />
-
-          {/* Zoom Controls */}
-          <div className="absolute top-4 right-4 flex flex-col space-y-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleZoomIn}
-              className="bg-white shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleZoomOut}
-              className="bg-white shadow-sm"
-            >
-              <Minus className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Coordinates Display */}
-          <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 px-3 py-1 rounded text-xs text-gray-600">
-            {center.lat.toFixed(6)}, {center.lng.toFixed(6)}
-          </div>
-
-          {/* Zoom Level */}
-          <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 px-3 py-1 rounded text-xs text-gray-600">
-            Zoom: {zoom}
-          </div>
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleZoomOut}
+            className="bg-white shadow-sm"
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
         </div>
 
-        {/* Map Instructions */}
-        <p className="text-xs text-gray-500 mt-2">
-          Click on the map to set the center of your geofence area. Use the search bar to find specific locations.
-        </p>
+        <div className="absolute bottom-4 left-4 bg-white/95 px-3 py-1.5 rounded text-xs text-gray-700 flex items-center gap-1 max-w-[85%] shadow z-10">
+          <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-blue-600" />
+          <span className="truncate font-mono">
+            {center.lat.toFixed(6)}, {center.lng.toFixed(6)}
+          </span>
+        </div>
       </div>
+
+      <p className="text-xs text-gray-500">
+        Search to jump to an address, or click / drag the pin to set the geofence center.
+      </p>
     </div>
   );
 };
