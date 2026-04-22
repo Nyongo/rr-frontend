@@ -145,11 +145,27 @@ const TrackStudent = () => {
     }
   }, [trackingData?.locationHistory]);
 
-  // Use WebSocket location if available, otherwise use API location
-  // Memoize to prevent unnecessary re-renders
+  // Live/API point, or last recorded point (needed when trip is completed and currentLocation is null)
   const displayLocation = useMemo(() => {
-    return wsCurrentLocation || currentLocation || trackingData?.currentLocation;
-  }, [wsCurrentLocation, currentLocation, trackingData?.currentLocation]);
+    const direct =
+      wsCurrentLocation || currentLocation || trackingData?.currentLocation;
+    if (direct) return direct;
+
+    const hist =
+      locationHistory.length > 0
+        ? locationHistory
+        : trackingData?.locationHistory || [];
+    if (hist.length > 0) {
+      return hist[hist.length - 1];
+    }
+    return null;
+  }, [
+    wsCurrentLocation,
+    currentLocation,
+    trackingData?.currentLocation,
+    locationHistory,
+    trackingData?.locationHistory,
+  ]);
   
   const displayLocationHistory = useMemo(() => {
     return locationHistory.length > 0 ? locationHistory : (trackingData?.locationHistory || []);
@@ -728,23 +744,28 @@ const TrackStudent = () => {
               </CardContent>
             </Card>
 
-            {/* Real-time Location Tracker */}
-            {activeTrip.status === "IN_PROGRESS" && (
+            {/* Trip map: live while in progress; static route / last position after completion */}
+            {(activeTrip.status === "IN_PROGRESS" ||
+              activeTrip.status === "COMPLETED") && (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <MapPin className="w-5 h-5" />
-                        Live Location Tracking
+                        {activeTrip.status === "IN_PROGRESS"
+                          ? "Live Location Tracking"
+                          : "Trip map"}
                       </CardTitle>
                       <CardDescription>
-                        Real-time location of the bus during the trip
+                        {activeTrip.status === "IN_PROGRESS"
+                          ? "Real-time location of the bus during the trip"
+                          : "Recorded route and stops. Live tracking has ended; the map shows the last available positions."}
                       </CardDescription>
                     </div>
-                    {/* WebSocket Connection Status */}
-                    {trackingToken && (
-                      <div className="flex items-center gap-2">
+                    {/* WebSocket — only while trip is in progress */}
+                    {activeTrip.status === "IN_PROGRESS" && trackingToken && (
+                      <div className="flex items-center gap-2 shrink-0">
                         {wsConnected && wsSubscribed ? (
                           <>
                             <Wifi className="w-4 h-4 text-green-600" />
@@ -781,24 +802,34 @@ const TrackStudent = () => {
                       </div>
                     )}
                   </div>
+                  {activeTrip.status === "COMPLETED" && (
+                    <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50/80 px-3 py-2 text-sm text-green-900">
+                      <CheckCircle2 className="w-5 h-5 shrink-0 text-green-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Trip completed</p>
+                        <p className="text-green-800/90 text-xs mt-0.5">
+                          Pickup and drop-off are finished. The map below is not live.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  {/* Use WebSocket location if available, otherwise fall back to TripLocationTracker */}
                   {trackingToken && displayLocation ? (
                     <TripLocationMap
                       latitude={displayLocation.latitude}
                       longitude={displayLocation.longitude}
-                      heading={displayLocation.heading}
-                      speed={displayLocation.speed}
+                      heading={displayLocation.heading ?? undefined}
+                      speed={displayLocation.speed ?? undefined}
                       locationHistory={displayLocationHistory.map((loc) => ({
                         id: loc.id,
                         tripId: loc.tripId,
                         latitude: loc.latitude,
                         longitude: loc.longitude,
                         timestamp: loc.timestamp,
-                        speed: loc.speed,
-                        heading: loc.heading,
-                        accuracy: loc.accuracy,
+                        speed: loc.speed ?? 0,
+                        heading: loc.heading ?? 0,
+                        accuracy: loc.accuracy ?? 0,
                       }))}
                       stopPins={tripStopPins}
                     />
@@ -809,24 +840,6 @@ const TrackStudent = () => {
                       stopPins={tripStopPins}
                     />
                   )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Completed Trip Message */}
-            {activeTrip.status === "COMPLETED" && (
-              <Card>
-                <CardContent className="py-8">
-                  <div className="text-center space-y-2">
-                    <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
-                    <p className="text-lg font-semibold text-gray-900">
-                      Trip Completed
-                    </p>
-                    <p className="text-gray-600">
-                      This trip has been completed. Location tracking is no
-                      longer available.
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
             )}
