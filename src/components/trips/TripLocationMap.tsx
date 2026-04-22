@@ -5,6 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TripLocation } from "@/services/tripLocationApi";
 import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
 import { snapPathToRoads, type LatLngPoint } from "@/services/googleRoadsApi";
+import {
+  DEFAULT_MAP_SPAN_KM,
+  fitMapToSquareSpanKm,
+} from "@/lib/mapViewport";
 
 // Declare Google Maps types
 declare global {
@@ -102,10 +106,9 @@ const TripLocationMap = ({
         return;
       }
 
-      // Initialize map with validated coordinates
+      // Initialize map; viewport = ~2 km × 2 km around vehicle (tracking-app style)
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: validLat, lng: validLng },
-        zoom: 8,
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         streetViewControl: true,
         mapTypeControl: true,
@@ -114,6 +117,7 @@ const TripLocationMap = ({
       });
 
       mapInstanceRef.current = map;
+      fitMapToSquareSpanKm(map, validLat, validLng, DEFAULT_MAP_SPAN_KM, 40);
 
       // Add marker with validated coordinates
       const marker = new window.google.maps.Marker({
@@ -345,15 +349,13 @@ const TripLocationMap = ({
     const pathToDraw =
       snapped && snapped.length >= 2 ? snapped : allPoints;
 
-    drawSmoothPolyline(map, pathToDraw, true);
+    drawSmoothPolyline(map, pathToDraw);
+    // Keep ~2 km context around the vehicle, not the entire trip (Uber-style)
+    fitMapToSquareSpanKm(map, currentLat, currentLng, DEFAULT_MAP_SPAN_KM, 40);
   };
 
   // Draw smooth polyline with Google Maps-like styling
-  const drawSmoothPolyline = (
-    map: any,
-    points: LatLngPoint[],
-    shouldFitBounds: boolean = true
-  ) => {
+  const drawSmoothPolyline = (map: any, points: LatLngPoint[]) => {
     const polyline = new window.google.maps.Polyline({
       path: points,
       geodesic: true,
@@ -365,15 +367,6 @@ const TripLocationMap = ({
     });
 
     polylineRef.current = polyline;
-
-    // Only fit bounds on initial draw, not on updates
-    if (shouldFitBounds && points.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      points.forEach((point) => {
-        bounds.extend(point);
-      });
-      map.fitBounds(bounds, { padding: 50 });
-    }
   };
 
   // Smooth marker movement and map panning (like Google Maps/Uber)
@@ -540,7 +533,7 @@ const TripLocationMap = ({
       <div className="relative">
         <div
           ref={mapRef}
-          className="w-full h-64 rounded-lg border border-gray-200 overflow-hidden bg-gray-100"
+          className="w-full min-h-[300px] h-[42vh] sm:h-[45vh] max-h-[560px] rounded-lg border border-gray-200 overflow-hidden bg-gray-100"
         />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
@@ -574,7 +567,7 @@ const TripLocationMap = ({
         <div className="relative">
           <div
             ref={streetViewRef}
-            className="w-full h-64 rounded-lg border border-gray-200 overflow-hidden bg-gray-100"
+            className="w-full min-h-[300px] h-[42vh] sm:h-[45vh] max-h-[560px] rounded-lg border border-gray-200 overflow-hidden bg-gray-100"
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">

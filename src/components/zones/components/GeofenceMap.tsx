@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Minus, MapPin, Loader2 } from "lucide-react";
 import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
+import {
+  DEFAULT_MAP_SPAN_KM,
+  fitMapToSquareSpanKm,
+} from "@/lib/mapViewport";
 
 interface GeofenceMapProps {
   center: { lat: number; lng: number };
@@ -39,12 +43,12 @@ const GeofenceMap = ({
 
     const map = new window.google.maps.Map(mapRef.current, {
       center,
-      zoom: 7,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
     });
     mapInstanceRef.current = map;
+    fitMapToSquareSpanKm(map, center.lat, center.lng, DEFAULT_MAP_SPAN_KM, 32);
 
     const circle = new window.google.maps.Circle({
       center,
@@ -101,7 +105,13 @@ const GeofenceMap = ({
     circleRef.current.setCenter(center);
     circleRef.current.setRadius(radius);
     markerRef.current.setPosition(center);
-    mapInstanceRef.current.panTo(center);
+    fitMapToSquareSpanKm(
+      mapInstanceRef.current,
+      center.lat,
+      center.lng,
+      DEFAULT_MAP_SPAN_KM,
+      32
+    );
   }, [center.lat, center.lng, radius]);
 
   // Places Autocomplete (search by name)
@@ -123,8 +133,13 @@ const GeofenceMap = ({
       if (circleRef.current && markerRef.current && mapInstanceRef.current) {
         circleRef.current.setCenter({ lat, lng });
         markerRef.current.setPosition({ lat, lng });
-        mapInstanceRef.current.panTo({ lat, lng });
-        mapInstanceRef.current.setZoom(8);
+        fitMapToSquareSpanKm(
+          mapInstanceRef.current,
+          lat,
+          lng,
+          DEFAULT_MAP_SPAN_KM,
+          32
+        );
       }
       onChangeRef.current({ lat, lng }, radiusRef.current);
     });
@@ -168,7 +183,7 @@ const GeofenceMap = ({
       <div className="relative rounded-lg border border-gray-300 overflow-hidden">
         <div
           ref={mapRef}
-          className="w-full h-80 bg-gray-100"
+          className="w-full min-h-[360px] h-[45vh] max-h-[640px] bg-gray-100"
         />
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100/90 z-20">

@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { Loader2, Navigation } from "lucide-react";
 import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
+import {
+  DEFAULT_MAP_SPAN_KM,
+  fitMapToSquareSpanKm,
+} from "@/lib/mapViewport";
 
 interface TripRoutePreviewMapProps {
   waypoints: { lat: number; lng: number }[];
@@ -32,11 +36,17 @@ const TripRoutePreviewMap = ({
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: pts[0],
-        zoom: 6,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,
       });
+      fitMapToSquareSpanKm(
+        mapInstanceRef.current,
+        pts[0].lat,
+        pts[0].lng,
+        DEFAULT_MAP_SPAN_KM,
+        24
+      );
     } else {
       mapInstanceRef.current.setCenter(pts[0]);
     }
@@ -96,7 +106,7 @@ const TripRoutePreviewMap = ({
         <Navigation className="w-4 h-4 text-blue-600" />
         Planned route (driving directions preview)
       </div>
-      <div className="relative w-full h-56 sm:h-64 rounded-lg border border-gray-200 overflow-hidden bg-gray-100">
+      <div className="relative w-full min-h-[300px] h-[40vh] sm:h-[42vh] max-h-[520px] rounded-lg border border-gray-200 overflow-hidden bg-gray-100">
         <div ref={mapRef} className="w-full h-full" />
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100/90">
