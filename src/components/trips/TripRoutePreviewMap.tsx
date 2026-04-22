@@ -32,7 +32,7 @@ const TripRoutePreviewMap = ({
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: pts[0],
-        zoom: 12,
+        zoom: 6,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,

@@ -39,7 +39,7 @@ const GeofenceMap = ({
 
     const map = new window.google.maps.Map(mapRef.current, {
       center,
-      zoom: 14,
+      zoom: 7,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
@@ -124,7 +124,7 @@ const GeofenceMap = ({
         circleRef.current.setCenter({ lat, lng });
         markerRef.current.setPosition({ lat, lng });
         mapInstanceRef.current.panTo({ lat, lng });
-        mapInstanceRef.current.setZoom(15);
+        mapInstanceRef.current.setZoom(8);
       }
       onChangeRef.current({ lat, lng }, radiusRef.current);
     });

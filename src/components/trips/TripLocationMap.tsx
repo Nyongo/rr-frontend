@@ -105,7 +105,7 @@ const TripLocationMap = ({
       // Initialize map with validated coordinates
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: validLat, lng: validLng },
-        zoom: 15,
+        zoom: 8,
         mapTypeId: window.google.maps.MapTypeId.ROADMAP,
         streetViewControl: true,
         mapTypeControl: true,
