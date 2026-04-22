@@ -23,15 +23,18 @@ import {
 } from "@/services/tripLocationApi";
 import { toast } from "@/hooks/use-toast";
 import TripLocationMap from "./TripLocationMap";
+import type { TripStopPin } from "@/components/trips/tripStopPins";
 
 interface TripLocationTrackerProps {
   tripId: string;
   tripStatus: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  stopPins?: TripStopPin[];
 }
 
 const TripLocationTracker = ({
   tripId,
   tripStatus,
+  stopPins = [],
 }: TripLocationTrackerProps) => {
   const [locationHistory, setLocationHistory] = useState<TripLocation[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -194,6 +197,7 @@ const TripLocationTracker = ({
               heading={displayLocation.heading}
               speed={displayLocation.speed}
               locationHistory={locationHistory}
+              stopPins={stopPins}
             />
 
             {/* Location Details */}

@@ -27,6 +27,7 @@ import TripLocationTracker from "@/components/trips/TripLocationTracker";
 import { getStudentById, Student } from "@/services/studentsApi";
 import { useStudentTrackingWebSocket } from "@/hooks/useStudentTrackingWebSocket";
 import TripLocationMap from "@/components/trips/TripLocationMap";
+import { buildTripStopPins } from "@/components/trips/tripStopPins";
 
 const TrackStudent = () => {
   const { trackingToken } = useParams<{ trackingToken?: string }>();
@@ -153,6 +154,11 @@ const TrackStudent = () => {
   const displayLocationHistory = useMemo(() => {
     return locationHistory.length > 0 ? locationHistory : (trackingData?.locationHistory || []);
   }, [locationHistory, trackingData?.locationHistory]);
+
+  const tripStopPins = useMemo(
+    () => buildTripStopPins(activeTrip),
+    [activeTrip]
+  );
 
   // Load student and trip if tracking token is in URL (from email link)
   useEffect(() => {
@@ -794,11 +800,13 @@ const TrackStudent = () => {
                         heading: loc.heading,
                         accuracy: loc.accuracy,
                       }))}
+                      stopPins={tripStopPins}
                     />
                   ) : (
                     <TripLocationTracker
                       tripId={activeTrip.id}
                       tripStatus={activeTrip.status}
+                      stopPins={tripStopPins}
                     />
                   )}
                 </CardContent>

@@ -43,7 +43,8 @@ const GeofenceMap = ({
 
     const map = new window.google.maps.Map(mapRef.current, {
       center,
-      mapTypeControl: false,
+      mapTypeId: window.google.maps.MapTypeId.HYBRID,
+      mapTypeControl: true,
       streetViewControl: false,
       fullscreenControl: true,
     });

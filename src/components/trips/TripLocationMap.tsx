@@ -9,6 +9,7 @@ import {
   DEFAULT_MAP_SPAN_KM,
   fitMapToSquareSpanKm,
 } from "@/lib/mapViewport";
+import type { TripStopPin } from "@/components/trips/tripStopPins";
 
 // Declare Google Maps types
 declare global {
@@ -23,6 +24,8 @@ interface TripLocationMapProps {
   heading?: number;
   speed?: number;
   locationHistory?: TripLocation[];
+  /** Pickup / drop-off pins from trip students (when GPS is available) */
+  stopPins?: TripStopPin[];
   className?: string;
 }
 
@@ -52,12 +55,21 @@ const validateCoordinates = (lat: number, lng: number): { lat: number; lng: numb
   return { lat, lng, valid: true };
 };
 
+function escapeHtmlForMap(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 const TripLocationMap = ({
   latitude,
   longitude,
   heading,
   speed,
   locationHistory = [],
+  stopPins = [],
   className = "",
 }: TripLocationMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -69,6 +81,7 @@ const TripLocationMap = ({
   const startMarkerRef = useRef<any>(null);
   const mainInfoWindowRef = useRef<any>(null);
   const startInfoWindowRef = useRef<any>(null);
+  const stopPinMarkersRef = useRef<any[]>([]);
   const { isLoaded: isGoogleMapsLoaded, error: scriptLoadError } =
     useGoogleMapsScript();
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +94,8 @@ const TripLocationMap = ({
   const validatedCoords = validateCoordinates(latitude, longitude);
   const validLat = validatedCoords.lat;
   const validLng = validatedCoords.lng;
+
+  const stopPinsKey = JSON.stringify(stopPins);
 
   useEffect(() => {
     if (scriptLoadError) {
@@ -106,10 +121,10 @@ const TripLocationMap = ({
         return;
       }
 
-      // Initialize map; viewport = ~2 km × 2 km around vehicle (tracking-app style)
+      // Initialize map; viewport ~1 km × 1 km; satellite + labels (hybrid)
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: validLat, lng: validLng },
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+        mapTypeId: window.google.maps.MapTypeId.HYBRID,
         streetViewControl: true,
         mapTypeControl: true,
         fullscreenControl: true,
@@ -124,6 +139,7 @@ const TripLocationMap = ({
         position: { lat: validLat, lng: validLng },
         map: map,
         title: "Trip Location",
+        zIndex: 100,
         icon: {
           path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
           scale: 6,
@@ -255,6 +271,80 @@ const TripLocationMap = ({
       setIsLoading(false);
     }
   }, [isGoogleMapsLoaded, validLat, validLng]); // Re-initialize if coordinates change significantly
+
+  // Pickup / drop-off pins (student stops)
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !mapInstanceRef.current || !window.google?.maps) {
+      return;
+    }
+
+    const map = mapInstanceRef.current;
+
+    stopPinMarkersRef.current.forEach((m) => m.setMap(null));
+    stopPinMarkersRef.current = [];
+
+    for (const pin of stopPins) {
+      const validated = validateCoordinates(pin.latitude, pin.longitude);
+      if (!validated.valid) continue;
+
+      const isPickup = pin.kind === "pickup";
+      const title = `${isPickup ? "Pickup" : "Drop-off"}${
+        pin.studentName ? ` · ${pin.studentName}` : ""
+      }`;
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: validated.lat, lng: validated.lng },
+        map,
+        title,
+        zIndex: 20,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: isPickup ? "#16a34a" : "#2563eb",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+        },
+        label: {
+          text: isPickup ? "P" : "D",
+          color: "#ffffff",
+          fontSize: "11px",
+          fontWeight: "bold",
+        },
+      });
+
+      const nameHtml = pin.studentName
+        ? `<div style="font-size:13px;margin-top:4px;">${escapeHtmlForMap(
+            pin.studentName
+          )}</div>`
+        : "";
+
+      const iw = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding:8px;max-width:260px;">
+            <div style="font-weight:600;color:${isPickup ? "#15803d" : "#1d4ed8"};">
+              ${isPickup ? "Pickup" : "Drop-off"}
+            </div>
+            ${nameHtml}
+            <div style="font-size:11px;color:#666;margin-top:6px;">
+              ${validated.lat.toFixed(6)}, ${validated.lng.toFixed(6)}
+            </div>
+          </div>
+        `,
+      });
+
+      marker.addListener("click", () => {
+        iw.open(map, marker);
+      });
+
+      stopPinMarkersRef.current.push(marker);
+    }
+
+    return () => {
+      stopPinMarkersRef.current.forEach((m) => m.setMap(null));
+      stopPinMarkersRef.current = [];
+    };
+  }, [isGoogleMapsLoaded, stopPinsKey]);
 
   // Initialize Street View
   useEffect(() => {
@@ -531,6 +621,29 @@ const TripLocationMap = ({
 
       {/* Map View */}
       <div className="relative">
+        {stopPins.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 mb-2">
+            <span className="font-medium text-gray-700">Stops:</span>
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white"
+                aria-hidden
+              >
+                P
+              </span>
+              Pickup
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white"
+                aria-hidden
+              >
+                D
+              </span>
+              Drop-off
+            </span>
+          </div>
+        )}
         <div
           ref={mapRef}
           className="w-full min-h-[300px] h-[42vh] sm:h-[45vh] max-h-[560px] rounded-lg border border-gray-200 overflow-hidden bg-gray-100"

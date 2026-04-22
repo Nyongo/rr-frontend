@@ -2,7 +2,7 @@
  * Default on-screen span for tracking-style maps (~Uber / ride-hailing context).
  * The visible map is fit so roughly this many km fit across width and height.
  */
-export const DEFAULT_MAP_SPAN_KM = 2;
+export const DEFAULT_MAP_SPAN_KM = 1;
 
 const KM_PER_DEG_LAT = 111.32;
 
@@ -29,7 +29,7 @@ export function getBoundsForSquareSpanKm(
 }
 
 /**
- * Fits the map so approximately `spanKm` × `spanKm` is visible (like a 2 km window).
+ * Fits the map so approximately `spanKm` × `spanKm` is visible (e.g. a 1 km window).
  */
 export function fitMapToSquareSpanKm(
   map: any,

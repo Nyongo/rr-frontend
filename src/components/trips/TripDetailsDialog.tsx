@@ -23,6 +23,7 @@ import {
 import TripLocationTracker from "./TripLocationTracker";
 import TripRoutePreviewMap from "./TripRoutePreviewMap";
 import { buildTripRouteWaypoints } from "./tripRouteWaypoints";
+import { buildTripStopPins } from "./tripStopPins";
 
 interface TripDetailsDialogProps {
   trip: Trip | null;
@@ -207,7 +208,11 @@ const TripDetailsDialog = ({ trip, isOpen, onClose }: TripDetailsDialogProps) =>
             )}
 
           {/* Real-time Location Tracking */}
-          <TripLocationTracker tripId={trip.id} tripStatus={trip.status} />
+          <TripLocationTracker
+            tripId={trip.id}
+            tripStatus={trip.status}
+            stopPins={buildTripStopPins(trip)}
+          />
 
           {/* Location Information */}
           {(trip.startLocation || trip.endLocation || trip.startGps || trip.endGps) && (
