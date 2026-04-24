@@ -20,11 +20,16 @@ export function useGoogleMapsScript(): {
   isLoaded: boolean;
   error: string | null;
 } {
-  const [isLoaded, setIsLoaded] = useState(() => !!window.google?.maps);
+  const isMapsReady = () =>
+    typeof window.google?.maps?.Map === "function" &&
+    // Marker library might still be loading, but Map must exist.
+    true;
+
+  const [isLoaded, setIsLoaded] = useState(() => isMapsReady());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (window.google?.maps) {
+    if (isMapsReady()) {
       setIsLoaded(true);
       return;
     }
@@ -37,15 +42,15 @@ export function useGoogleMapsScript(): {
 
     if (existing) {
       const done = () => {
-        if (window.google?.maps) setIsLoaded(true);
+        if (isMapsReady()) setIsLoaded(true);
       };
-      if (window.google?.maps) {
+      if (isMapsReady()) {
         done();
         return;
       }
       existing.addEventListener("load", done);
       const interval = window.setInterval(() => {
-        if (window.google?.maps) {
+        if (isMapsReady()) {
           done();
           window.clearInterval(interval);
         }
@@ -63,8 +68,20 @@ export function useGoogleMapsScript(): {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      if (window.google?.maps) setIsLoaded(true);
-      else setError("Google Maps failed to initialize");
+      // Some environments briefly expose window.google.maps before Map is ready.
+      const started = Date.now();
+      const tick = () => {
+        if (isMapsReady()) {
+          setIsLoaded(true);
+          return;
+        }
+        if (Date.now() - started > 6000) {
+          setError("Google Maps loaded but Map constructor not ready");
+          return;
+        }
+        window.setTimeout(tick, 50);
+      };
+      tick();
     };
     script.onerror = () => setError("Failed to load Google Maps");
     document.head.appendChild(script);
