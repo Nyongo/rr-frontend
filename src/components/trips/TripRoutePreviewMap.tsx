@@ -5,6 +5,7 @@ import {
   DEFAULT_MAP_SPAN_KM,
   fitMapToSquareSpanKm,
 } from "@/lib/mapViewport";
+import { config } from "@/lib/config";
 
 interface TripRoutePreviewMapProps {
   waypoints: { lat: number; lng: number }[];
@@ -36,7 +37,8 @@ const TripRoutePreviewMap = ({
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: pts[0],
-        mapTypeId: window.google.maps.MapTypeId.HYBRID,
+        mapTypeId: "hybrid",
+        ...(config.GOOGLE_MAPS_MAP_ID ? { mapId: config.GOOGLE_MAPS_MAP_ID } : {}),
         mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: true,

@@ -7,6 +7,7 @@ import {
   DEFAULT_MAP_SPAN_KM,
   fitMapToSquareSpanKm,
 } from "@/lib/mapViewport";
+import { config } from "@/lib/config";
 
 interface GeofenceMapProps {
   center: { lat: number; lng: number };
@@ -43,7 +44,8 @@ const GeofenceMap = ({
 
     const map = new window.google.maps.Map(mapRef.current, {
       center,
-      mapTypeId: window.google.maps.MapTypeId.HYBRID,
+      mapTypeId: "hybrid",
+      ...(config.GOOGLE_MAPS_MAP_ID ? { mapId: config.GOOGLE_MAPS_MAP_ID } : {}),
       mapTypeControl: true,
       streetViewControl: false,
       fullscreenControl: true,
@@ -72,19 +74,26 @@ const GeofenceMap = ({
     pinEl.style.border = "2px solid #ffffff";
     pinEl.style.boxShadow = "0 2px 8px rgba(0,0,0,0.25)";
 
-    // Advanced marker (recommended by Google)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
-      position: center,
-      map,
-      title: "Geofence center",
-      content: pinEl,
-      gmpDraggable: true,
-    });
+    const hasMapId = Boolean(config.GOOGLE_MAPS_MAP_ID);
+    const marker = hasMapId
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        new (window.google.maps as any).marker.AdvancedMarkerElement({
+          position: center,
+          map,
+          title: "Geofence center",
+          content: pinEl,
+          gmpDraggable: true,
+        })
+      : new window.google.maps.Marker({
+          position: center,
+          map,
+          title: "Geofence center",
+          draggable: true,
+        });
     markerRef.current = marker;
 
-    marker.addListener("dragend", () => {
-      const pos = marker.position;
+    marker.addListener(hasMapId ? "gmp-dragend" : "dragend", () => {
+      const pos = hasMapId ? marker.position : marker.getPosition?.();
       if (!pos) return;
       const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
       const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
@@ -96,7 +105,8 @@ const GeofenceMap = ({
       if (!e.latLng) return;
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
-      marker.position = { lat, lng };
+      if (hasMapId) marker.position = { lat, lng };
+      else marker.setPosition?.({ lat, lng });
       circle.setCenter({ lat, lng });
       onChangeRef.current({ lat, lng }, radiusRef.current);
     });
@@ -116,7 +126,8 @@ const GeofenceMap = ({
       return;
     circleRef.current.setCenter(center);
     circleRef.current.setRadius(radius);
-    markerRef.current.position = center;
+    if ("position" in markerRef.current) markerRef.current.position = center;
+    else markerRef.current.setPosition?.(center);
     fitMapToSquareSpanKm(
       mapInstanceRef.current,
       center.lat,
@@ -144,7 +155,8 @@ const GeofenceMap = ({
       const lng = loc.lng();
       if (circleRef.current && markerRef.current && mapInstanceRef.current) {
         circleRef.current.setCenter({ lat, lng });
-        markerRef.current.position = { lat, lng };
+        if ("position" in markerRef.current) markerRef.current.position = { lat, lng };
+        else markerRef.current.setPosition?.({ lat, lng });
         fitMapToSquareSpanKm(
           mapInstanceRef.current,
           lat,

@@ -10,6 +10,7 @@ import {
   fitMapToSquareSpanKm,
 } from "@/lib/mapViewport";
 import type { TripStopPin } from "@/components/trips/tripStopPins";
+import { config } from "@/lib/config";
 
 // Declare Google Maps types
 declare global {
@@ -125,7 +126,9 @@ const TripLocationMap = ({
       // Initialize map; viewport ~1 km × 1 km; satellite + labels (hybrid)
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: validLat, lng: validLng },
-        mapTypeId: window.google.maps.MapTypeId.HYBRID,
+        // Avoid MapTypeId lookup issues; string values are supported by Maps JS
+        mapTypeId: "hybrid",
+        ...(config.GOOGLE_MAPS_MAP_ID ? { mapId: config.GOOGLE_MAPS_MAP_ID } : {}),
         streetViewControl: true,
         mapTypeControl: true,
         fullscreenControl: true,
@@ -135,7 +138,9 @@ const TripLocationMap = ({
       mapInstanceRef.current = map;
       fitMapToSquareSpanKm(map, validLat, validLng, DEFAULT_MAP_SPAN_KM, 40);
 
-      // Vehicle marker (AdvancedMarkerElement)
+      const hasMapId = Boolean(config.GOOGLE_MAPS_MAP_ID);
+
+      // Vehicle marker
       const vehicleEl = document.createElement("div");
       vehicleEl.style.width = "22px";
       vehicleEl.style.height = "22px";
@@ -160,13 +165,21 @@ const TripLocationMap = ({
 
       vehicleMarkerContentRef.current = arrow;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
-        position: { lat: validLat, lng: validLng },
-        map,
-        title: "Trip Location",
-        content: vehicleEl,
-      });
+      const marker = hasMapId
+        ? // Advanced marker (requires mapId for best support)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          new (window.google.maps as any).marker.AdvancedMarkerElement({
+            position: { lat: validLat, lng: validLng },
+            map,
+            title: "Trip Location",
+            content: vehicleEl,
+          })
+        : // Fallback to classic marker if mapId is not configured yet
+          new window.google.maps.Marker({
+            position: { lat: validLat, lng: validLng },
+            map,
+            title: "Trip Location",
+          });
 
       markerRef.current = marker;
 
@@ -195,9 +208,16 @@ const TripLocationMap = ({
       });
       mainInfoWindowRef.current = infoWindow;
 
-      marker.addListener("click", () => {
-        infoWindow.open(map, marker);
-      });
+      // Advanced markers emit gmp-click; classic markers use click
+      if (hasMapId) {
+        marker.addListener("gmp-click", () => {
+          infoWindow.open(map, marker);
+        });
+      } else {
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+      }
 
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode(
@@ -226,13 +246,25 @@ const TripLocationMap = ({
         startEl.style.fontWeight = "700";
         startEl.textContent = "START";
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const startMarker = new (window.google.maps as any).marker.AdvancedMarkerElement({
-          position: { lat: startLocation.latitude, lng: startLocation.longitude },
-          map,
-          title: "Trip Start",
-          content: startEl,
-        });
+        const startMarker = hasMapId
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            new (window.google.maps as any).marker.AdvancedMarkerElement({
+              position: {
+                lat: startLocation.latitude,
+                lng: startLocation.longitude,
+              },
+              map,
+              title: "Trip Start",
+              content: startEl,
+            })
+          : new window.google.maps.Marker({
+              position: {
+                lat: startLocation.latitude,
+                lng: startLocation.longitude,
+              },
+              map,
+              title: "Trip Start",
+            });
 
         const buildStartInfoHtml = (address: string | null) => `
             <div style="padding: 8px; max-width: 280px;">
@@ -254,9 +286,15 @@ const TripLocationMap = ({
         });
         startInfoWindowRef.current = startInfoWindow;
 
-        startMarker.addListener("click", () => {
-          startInfoWindow.open(map, startMarker);
-        });
+        if (hasMapId) {
+          startMarker.addListener("gmp-click", () => {
+            startInfoWindow.open(map, startMarker);
+          });
+        } else {
+          startMarker.addListener("click", () => {
+            startInfoWindow.open(map, startMarker);
+          });
+        }
 
         geocoder.geocode(
           {
@@ -298,9 +336,11 @@ const TripLocationMap = ({
     }
 
     const map = mapInstanceRef.current;
+    const hasMapId = Boolean(config.GOOGLE_MAPS_MAP_ID);
 
     stopPinMarkersRef.current.forEach((m) => {
-      m.map = null;
+      if ("map" in m) m.map = null;
+      else if (typeof m.setMap === "function") m.setMap(null);
     });
     stopPinMarkersRef.current = [];
 
@@ -313,28 +353,36 @@ const TripLocationMap = ({
         pin.studentName ? ` · ${pin.studentName}` : ""
       }`;
 
-      const el = document.createElement("div");
-      el.style.width = "22px";
-      el.style.height = "22px";
-      el.style.borderRadius = "9999px";
-      el.style.background = isPickup ? "#16a34a" : "#2563eb";
-      el.style.border = "2px solid #ffffff";
-      el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.25)";
-      el.style.display = "flex";
-      el.style.alignItems = "center";
-      el.style.justifyContent = "center";
-      el.style.color = "#ffffff";
-      el.style.fontWeight = "700";
-      el.style.fontSize = "11px";
-      el.textContent = isPickup ? "P" : "D";
+      const marker = hasMapId
+        ? (() => {
+            const el = document.createElement("div");
+            el.style.width = "22px";
+            el.style.height = "22px";
+            el.style.borderRadius = "9999px";
+            el.style.background = isPickup ? "#16a34a" : "#2563eb";
+            el.style.border = "2px solid #ffffff";
+            el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.25)";
+            el.style.display = "flex";
+            el.style.alignItems = "center";
+            el.style.justifyContent = "center";
+            el.style.color = "#ffffff";
+            el.style.fontWeight = "700";
+            el.style.fontSize = "11px";
+            el.textContent = isPickup ? "P" : "D";
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
-        position: { lat: validated.lat, lng: validated.lng },
-        map,
-        title,
-        content: el,
-      });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return new (window.google.maps as any).marker.AdvancedMarkerElement({
+              position: { lat: validated.lat, lng: validated.lng },
+              map,
+              title,
+              content: el,
+            });
+          })()
+        : new window.google.maps.Marker({
+            position: { lat: validated.lat, lng: validated.lng },
+            map,
+            title,
+          });
 
       const nameHtml = pin.studentName
         ? `<div style="font-size:13px;margin-top:4px;">${escapeHtmlForMap(
@@ -356,16 +404,23 @@ const TripLocationMap = ({
         `,
       });
 
-      marker.addListener("click", () => {
-        iw.open(map, marker);
-      });
+      if (hasMapId) {
+        marker.addListener("gmp-click", () => {
+          iw.open(map, marker);
+        });
+      } else {
+        marker.addListener("click", () => {
+          iw.open(map, marker);
+        });
+      }
 
       stopPinMarkersRef.current.push(marker);
     }
 
     return () => {
       stopPinMarkersRef.current.forEach((m) => {
-        m.map = null;
+        if ("map" in m) m.map = null;
+        else if (typeof m.setMap === "function") m.setMap(null);
       });
       stopPinMarkersRef.current = [];
     };
@@ -513,8 +568,12 @@ const TripLocationMap = ({
 
     const newPosition = { lat: validated.lat, lng: validated.lng };
 
-    // Update marker position
-    markerRef.current.position = newPosition;
+    // Update marker position (AdvancedMarker uses .position, classic uses setPosition)
+    if ("position" in markerRef.current) {
+      markerRef.current.position = newPosition;
+    } else if (typeof markerRef.current.setPosition === "function") {
+      markerRef.current.setPosition(newPosition);
+    }
     
     // Smoothly pan map to follow marker (panTo is smooth by default in Google Maps)
     // This creates the smooth following effect like Uber/Google Maps navigation

@@ -31,6 +31,9 @@ export const config = {
     "VITE_GOOGLE_MAPS_API_KEY",
     "AIzaSyD15fDdmqNVINe8CtDWJkUJD3TNVIbg_B8"
   ),
+
+  // Optional: Google Maps Map ID (required for Advanced Markers in some configurations)
+  GOOGLE_MAPS_MAP_ID: getEnvVar("VITE_GOOGLE_MAPS_MAP_ID", ""),
 };
 
 // Log config in development (without sensitive values)
