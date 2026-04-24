@@ -221,7 +221,9 @@ const TripLocationTracker = ({
                   <span className="text-xs text-gray-500">Speed</span>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
-                  {displayLocation.speed.toFixed(1)} km/h
+                  {typeof displayLocation.speed === "number"
+                    ? `${displayLocation.speed.toFixed(1)} km/h`
+                    : "—"}
                 </p>
               </div>
 
@@ -231,7 +233,9 @@ const TripLocationTracker = ({
                   <span className="text-xs text-gray-500">Heading</span>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
-                  {displayLocation.heading}°
+                  {typeof displayLocation.heading === "number"
+                    ? `${displayLocation.heading}°`
+                    : "—"}
                 </p>
               </div>
 
@@ -241,7 +245,9 @@ const TripLocationTracker = ({
                   <span className="text-xs text-gray-500">Accuracy</span>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
-                  {displayLocation.accuracy.toFixed(1)} m
+                  {typeof displayLocation.accuracy === "number"
+                    ? `${displayLocation.accuracy.toFixed(1)} m`
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -302,7 +308,9 @@ const TripLocationTracker = ({
                               </span>
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {location.speed.toFixed(1)} km/h
+                              {typeof location.speed === "number"
+                                ? `${location.speed.toFixed(1)} km/h`
+                                : "—"}
                             </Badge>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">

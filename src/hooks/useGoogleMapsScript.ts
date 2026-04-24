@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { config } from "@/lib/config";
 
-/** Libraries needed for Places, Directions, distance helpers, and overlays */
-export const GOOGLE_MAPS_LIBRARIES = "places,geometry";
+/** Libraries needed for Places, Directions, distance helpers, overlays, and advanced markers */
+export const GOOGLE_MAPS_LIBRARIES = "places,geometry,marker";
 
 const SCRIPT_MARKER_ID = "rocketroll-google-maps-js";
 
@@ -58,7 +58,8 @@ export function useGoogleMapsScript(): {
 
     const script = document.createElement("script");
     script.id = SCRIPT_MARKER_ID;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${config.GOOGLE_MAPS_API_KEY}&libraries=${GOOGLE_MAPS_LIBRARIES}`;
+    // Use Google's recommended loading=async param to avoid performance warning
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${config.GOOGLE_MAPS_API_KEY}&libraries=${GOOGLE_MAPS_LIBRARIES}&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => {

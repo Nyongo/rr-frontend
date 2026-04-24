@@ -77,6 +77,7 @@ const TripLocationMap = ({
   const mapInstanceRef = useRef<any>(null);
   const streetViewInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const vehicleMarkerContentRef = useRef<HTMLDivElement | null>(null);
   const polylineRef = useRef<any>(null);
   const startMarkerRef = useRef<any>(null);
   const mainInfoWindowRef = useRef<any>(null);
@@ -134,24 +135,44 @@ const TripLocationMap = ({
       mapInstanceRef.current = map;
       fitMapToSquareSpanKm(map, validLat, validLng, DEFAULT_MAP_SPAN_KM, 40);
 
-      // Add marker with validated coordinates
-      const marker = new window.google.maps.Marker({
+      // Vehicle marker (AdvancedMarkerElement)
+      const vehicleEl = document.createElement("div");
+      vehicleEl.style.width = "22px";
+      vehicleEl.style.height = "22px";
+      vehicleEl.style.borderRadius = "9999px";
+      vehicleEl.style.background = "#ef4444";
+      vehicleEl.style.border = "2px solid #ffffff";
+      vehicleEl.style.boxShadow = "0 2px 10px rgba(0,0,0,0.25)";
+      vehicleEl.style.display = "flex";
+      vehicleEl.style.alignItems = "center";
+      vehicleEl.style.justifyContent = "center";
+
+      // Arrow inside (rotation updated on heading updates)
+      const arrow = document.createElement("div");
+      arrow.style.width = "0";
+      arrow.style.height = "0";
+      arrow.style.borderLeft = "5px solid transparent";
+      arrow.style.borderRight = "5px solid transparent";
+      arrow.style.borderBottom = "10px solid #ffffff";
+      arrow.style.transform = `rotate(${typeof heading === "number" ? heading : 0}deg)`;
+      arrow.style.transformOrigin = "50% 60%";
+      vehicleEl.appendChild(arrow);
+
+      vehicleMarkerContentRef.current = arrow;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
         position: { lat: validLat, lng: validLng },
-        map: map,
+        map,
         title: "Trip Location",
-        zIndex: 100,
-        icon: {
-          path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 6,
-          fillColor: "#ef4444",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-          rotation: heading || 0,
-        },
+        content: vehicleEl,
       });
 
       markerRef.current = marker;
+
+      const displaySpeed =
+        typeof speed === "number" ? `${speed.toFixed(1)} km/h` : null;
+      const displayHeading = typeof heading === "number" ? `${heading}°` : null;
 
       const buildMainInfoHtml = (address: string | null) => `
           <div style="padding: 8px; max-width: 280px;">
@@ -162,9 +183,9 @@ const TripLocationMap = ({
                 : `<div style="font-size: 12px; color: #888;">Loading address…</div>`
             }
             <div style="font-size: 11px; color: #666;">
-              ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
-              ${speed !== undefined ? `<br>Speed: ${speed.toFixed(1)} km/h` : ""}
-              ${heading !== undefined ? `<br>Heading: ${heading}°` : ""}
+              ${validLat.toFixed(6)}, ${validLng.toFixed(6)}
+              ${displaySpeed ? `<br>Speed: ${displaySpeed}` : ""}
+              ${displayHeading ? `<br>Heading: ${displayHeading}` : ""}
             </div>
           </div>
         `;
@@ -194,25 +215,23 @@ const TripLocationMap = ({
       // Add start marker (first point) - done here to ensure map is ready
       if (locationHistory && locationHistory.length > 0 && !startMarkerRef.current) {
         const startLocation = locationHistory[0];
-        const startMarker = new window.google.maps.Marker({
+        const startEl = document.createElement("div");
+        startEl.style.background = "#34A853";
+        startEl.style.color = "#ffffff";
+        startEl.style.border = "2px solid #ffffff";
+        startEl.style.boxShadow = "0 2px 10px rgba(0,0,0,0.25)";
+        startEl.style.borderRadius = "9999px";
+        startEl.style.padding = "4px 7px";
+        startEl.style.fontSize = "10px";
+        startEl.style.fontWeight = "700";
+        startEl.textContent = "START";
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const startMarker = new (window.google.maps as any).marker.AdvancedMarkerElement({
           position: { lat: startLocation.latitude, lng: startLocation.longitude },
-          map: map,
+          map,
           title: "Trip Start",
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: "#34A853", // Google Maps green for start
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 3,
-          },
-          label: {
-            text: "START",
-            color: "#ffffff",
-            fontSize: "11px",
-            fontWeight: "bold",
-          },
-          zIndex: 10,
+          content: startEl,
         });
 
         const buildStartInfoHtml = (address: string | null) => `
@@ -280,7 +299,9 @@ const TripLocationMap = ({
 
     const map = mapInstanceRef.current;
 
-    stopPinMarkersRef.current.forEach((m) => m.setMap(null));
+    stopPinMarkersRef.current.forEach((m) => {
+      m.map = null;
+    });
     stopPinMarkersRef.current = [];
 
     for (const pin of stopPins) {
@@ -292,25 +313,27 @@ const TripLocationMap = ({
         pin.studentName ? ` · ${pin.studentName}` : ""
       }`;
 
-      const marker = new window.google.maps.Marker({
+      const el = document.createElement("div");
+      el.style.width = "22px";
+      el.style.height = "22px";
+      el.style.borderRadius = "9999px";
+      el.style.background = isPickup ? "#16a34a" : "#2563eb";
+      el.style.border = "2px solid #ffffff";
+      el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.25)";
+      el.style.display = "flex";
+      el.style.alignItems = "center";
+      el.style.justifyContent = "center";
+      el.style.color = "#ffffff";
+      el.style.fontWeight = "700";
+      el.style.fontSize = "11px";
+      el.textContent = isPickup ? "P" : "D";
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
         position: { lat: validated.lat, lng: validated.lng },
         map,
         title,
-        zIndex: 20,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: isPickup ? "#16a34a" : "#2563eb",
-          fillOpacity: 1,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-        },
-        label: {
-          text: isPickup ? "P" : "D",
-          color: "#ffffff",
-          fontSize: "11px",
-          fontWeight: "bold",
-        },
+        content: el,
       });
 
       const nameHtml = pin.studentName
@@ -341,7 +364,9 @@ const TripLocationMap = ({
     }
 
     return () => {
-      stopPinMarkersRef.current.forEach((m) => m.setMap(null));
+      stopPinMarkersRef.current.forEach((m) => {
+        m.map = null;
+      });
       stopPinMarkersRef.current = [];
     };
   }, [isGoogleMapsLoaded, stopPinsKey]);
@@ -487,25 +512,17 @@ const TripLocationMap = ({
     }
 
     const newPosition = { lat: validated.lat, lng: validated.lng };
-    
-    // Update marker position (Google Maps handles smooth transitions internally)
-    markerRef.current.setPosition(newPosition);
+
+    // Update marker position
+    markerRef.current.position = newPosition;
     
     // Smoothly pan map to follow marker (panTo is smooth by default in Google Maps)
     // This creates the smooth following effect like Uber/Google Maps navigation
     mapInstanceRef.current.panTo(newPosition);
 
     // Update marker rotation if heading is provided
-    if (heading !== undefined) {
-      markerRef.current.setIcon({
-        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-        scale: 6,
-        fillColor: "#ef4444",
-        fillOpacity: 1,
-        strokeColor: "#ffffff",
-        strokeWeight: 2,
-        rotation: heading,
-      });
+    if (typeof heading === "number" && vehicleMarkerContentRef.current) {
+      vehicleMarkerContentRef.current.style.transform = `rotate(${heading}deg)`;
     }
 
     // Update Street View position if it's visible
@@ -710,7 +727,7 @@ const TripLocationMap = ({
           </p>
         )}
         <p>
-          Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+          Coordinates: {validLat.toFixed(6)}, {validLng.toFixed(6)}
         </p>
       </div>
     </div>

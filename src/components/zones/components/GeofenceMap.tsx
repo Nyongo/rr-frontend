@@ -64,19 +64,30 @@ const GeofenceMap = ({
     });
     circleRef.current = circle;
 
-    const marker = new window.google.maps.Marker({
+    const pinEl = document.createElement("div");
+    pinEl.style.width = "18px";
+    pinEl.style.height = "18px";
+    pinEl.style.borderRadius = "9999px";
+    pinEl.style.background = "#ef4444";
+    pinEl.style.border = "2px solid #ffffff";
+    pinEl.style.boxShadow = "0 2px 8px rgba(0,0,0,0.25)";
+
+    // Advanced marker (recommended by Google)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const marker = new (window.google.maps as any).marker.AdvancedMarkerElement({
       position: center,
       map,
-      draggable: true,
       title: "Geofence center",
+      content: pinEl,
+      gmpDraggable: true,
     });
     markerRef.current = marker;
 
     marker.addListener("dragend", () => {
-      const pos = marker.getPosition();
+      const pos = marker.position;
       if (!pos) return;
-      const lat = pos.lat();
-      const lng = pos.lng();
+      const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
+      const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
       circle.setCenter({ lat, lng });
       onChangeRef.current({ lat, lng }, radiusRef.current);
     });
@@ -85,13 +96,13 @@ const GeofenceMap = ({
       if (!e.latLng) return;
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
-      marker.setPosition({ lat, lng });
+      marker.position = { lat, lng };
       circle.setCenter({ lat, lng });
       onChangeRef.current({ lat, lng }, radiusRef.current);
     });
 
     return () => {
-      marker.setMap(null);
+      marker.map = null;
       circle.setMap(null);
       mapInstanceRef.current = null;
       circleRef.current = null;
@@ -105,7 +116,7 @@ const GeofenceMap = ({
       return;
     circleRef.current.setCenter(center);
     circleRef.current.setRadius(radius);
-    markerRef.current.setPosition(center);
+    markerRef.current.position = center;
     fitMapToSquareSpanKm(
       mapInstanceRef.current,
       center.lat,
@@ -133,7 +144,7 @@ const GeofenceMap = ({
       const lng = loc.lng();
       if (circleRef.current && markerRef.current && mapInstanceRef.current) {
         circleRef.current.setCenter({ lat, lng });
-        markerRef.current.setPosition({ lat, lng });
+        markerRef.current.position = { lat, lng };
         fitMapToSquareSpanKm(
           mapInstanceRef.current,
           lat,
